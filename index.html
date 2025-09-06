@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Bidan & Terapis (Diperbarui)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #FFF0F5;
+            background-image: url('https://www.transparenttextures.com/patterns/sakura.png');
+        }
+        .kawaii-shadow {
+            box-shadow: 0 4px 6px -1px rgba(219, 112, 147, 0.3), 0 2px 4px -2px rgba(219, 112, 147, 0.2);
+        }
+        .btn-primary {
+            background-color: #FF69B4;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #FF1493;
+            transform: translateY(-2px);
+        }
+        .btn-primary:disabled {
+            background-color: #f7b8d6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background-color: #87CEEB;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background-color: #00BFFF;
+            transform: translateY(-2px);
+        }
+        .tab-active {
+            border-bottom: 3px solid #FF69B4;
+            color: #FF69B4;
+            font-weight: 700;
+        }
+        .tab-inactive {
+            color: #a0aec0;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .attendance-item {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        .attendance-item:hover {
+            background-color: #f9fafb;
+            border-left-color: #FF69B4;
+        }
+        .attendance-item.selected {
+            background-color: #f0f9ff;
+            border-left-color: #3b82f6;
+        }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #FF69B4;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <!-- Welcome Modal -->
+    <div id="welcome-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center kawaii-shadow fade-in">
+            <h2 class="text-3xl font-bold text-pink-500 mb-2">♡ Konnichiwa! ♡</h2>
+            <p class="text-lg text-gray-600 mb-6">Siapa nama kamu? 😊</p>
+            <input type="text" id="name-input" placeholder="Tulis nama di sini..." class="w-full px-4 py-3 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-400 mb-6 text-center">
+            <button id="start-btn" class="w-full btn-primary font-bold py-3 rounded-lg kawaii-shadow">Masuk</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="max-w-md mx-auto bg-white min-h-screen shadow-lg hidden">
+        <div class="p-6 bg-pink-100" style="background-image: url('https://i.pinimg.com/564x/c2/a7/9a/c2a79a0f4435887803673059811438a3.jpg'); background-size: cover; background-position: center;">
+            <h1 class="text-2xl font-bold text-white text-center" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.3);">Absensi Bidan & Terapis</h1>
+            <div class="text-center text-white mt-2" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.3);">
+                <p class="font-medium" id="display-name">Nabilah Pulungan</p>
+                <p class="text-sm" id="current-datetime">Senin, 1 Januari 2024</p>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex border-b">
+            <button id="tab-datang" class="flex-1 py-3 text-center font-medium tab-active">Absen Datang</button>
+            <button id="tab-pulang" class="flex-1 py-3 text-center font-medium tab-inactive">Absen Pulang</button>
+        </div>
+
+        <div class="p-6 space-y-6">
+            <!-- Universal Shift Selector -->
+            <div class="bg-blue-50 p-4 rounded-lg kawaii-shadow">
+                <h3 class="font-bold text-lg text-blue-800 mb-2">Pilih Shift Kerja Hari Ini</h3>
+                <div class="flex space-x-4">
+                    <label class="flex items-center space-x-2">
+                        <input type="radio" name="shift" value="Pagi" class="form-radio text-pink-500" checked>
+                        <span class="text-gray-700">☀️ Pagi (08:00 - 17:00)</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="radio" name="shift" value="Sore" class="form-radio text-pink-500">
+                        <span class="text-gray-700">🌙 Sore (15:00 - 21:30)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Datang Tab Content -->
+            <div id="content-datang">
+                <div class="bg-green-50 p-4 rounded-lg kawaii-shadow">
+                    <h3 class="font-bold text-lg text-green-800 mb-2">Lokasi Kamu Saat Ini</h3>
+                    <button id="get-location-btn" class="w-full btn-secondary font-bold py-2 rounded-lg text-sm mb-2 kawaii-shadow">📍 Dapatkan Lokasi</button>
+                    <p id="location-display" class="text-center text-gray-600 text-sm h-10">Lokasi akan tampil di sini...</p>
+                </div>
+
+                <button id="absen-datang-btn" class="w-full btn-primary font-bold py-4 rounded-lg kawaii-shadow text-lg mt-4" disabled>Absen Datang & Kirim</button>
+            </div>
+
+            <!-- Pulang Tab Content -->
+            <div id="content-pulang" class="hidden">
+                <div class="bg-yellow-50 p-4 rounded-lg kawaii-shadow">
+                    <h3 class="font-bold text-lg text-yellow-800 mb-2">Daftar Absen Datang (Belum Pulang)</h3>
+                    <div class="flex items-center mb-2">
+                        <span class="loading-spinner" id="loading-spinner"></span>
+                        <span class="text-sm text-gray-600" id="loading-text">Memuat data absen datang...</span>
+                    </div>
+                    <div id="attendance-list" class="max-h-60 overflow-y-auto mt-2 space-y-2">
+                        <!-- Daftar absen akan dimuat di sini -->
+                    </div>
+                    <div id="data-fix-options" class="mt-4 p-3 bg-red-50 rounded-lg hidden">
+                        <p class="text-sm text-red-700 mb-2">Ada masalah dengan data Anda. Silakan pilih opsi:</p>
+                        <button id="fix-data-btn" class="w-full bg-red-600 text-white py-2 rounded-lg text-sm mb-2">Perbaiki Data Saya</button>
+                        <button id="manual-absen-btn" class="w-full bg-blue-600 text-white py-2 rounded-lg text-sm">Absen Pulang Manual</button>
+                    </div>
+                </div>
+
+                <div class="bg-green-50 p-4 rounded-lg kawaii-shadow mt-4">
+                    <h3 class="font-bold text-lg text-green-800 mb-2">Lokasi Kamu Saat Ini</h3>
+                    <button id="get-location-pulang-btn" class="w-full btn-secondary font-bold py-2 rounded-lg text-sm mb-2 kawaii-shadow">📍 Dapatkan Lokasi</button>
+                    <p id="location-display-pulang" class="text-center text-gray-600 text-sm h-10">Lokasi akan tampil di sini...</p>
+                </div>
+
+                <button id="absen-pulang-btn" class="w-full btn-primary font-bold py-4 rounded-lg kawaii-shadow text-lg mt-4" disabled>Absen Pulang & Kirim</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 z-50">
+        <p id="toast-message"></p>
+    </div>
+
+    <script>
+        // --- PENTING: PENGATURAN GOOGLE SHEET ---
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZxc9s1hUgn04AM3OWV4JLEr1l_oHn8VM0L4Cwaqev54gKag31teoWNSFHa3JBB4FKMQ/exec';
+
+        // --- DOM Elements ---
+        const welcomeModal = document.getElementById('welcome-modal');
+        const nameInput = document.getElementById('name-input');
+        const startBtn = document.getElementById('start-btn');
+        const mainContent = document.getElementById('main-content');
+        const displayName = document.getElementById('display-name');
+        const currentDatetime = document.getElementById('current-datetime');
+        const tabs = { datang: document.getElementById('tab-datang'), pulang: document.getElementById('tab-pulang') };
+        const contents = { datang: document.getElementById('content-datang'), pulang: document.getElementById('content-pulang') };
+        const locationBtn = document.getElementById('get-location-btn');
+        const locationDisplay = document.getElementById('location-display');
+        const locationBtnPulang = document.getElementById('get-location-pulang-btn');
+        const locationDisplayPulang = document.getElementById('location-display-pulang');
+        const absenDatangBtn = document.getElementById('absen-datang-btn');
+        const absenPulangBtn = document.getElementById('absen-pulang-btn');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        const attendanceList = document.getElementById('attendance-list');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const loadingText = document.getElementById('loading-text');
+        const dataFixOptions = document.getElementById('data-fix-options');
+        const fixDataBtn = document.getElementById('fix-data-btn');
+        const manualAbsenBtn = document.getElementById('manual-absen-btn');
+
+        // --- App State ---
+        let state = {
+            nama: '',
+            namaFormatted: '',
+            lokasiDatang: { alamat: '', latitude: null, longitude: null, ready: false },
+            lokasiPulang: { alamat: '', latitude: null, longitude: null, ready: false },
+            selectedAttendance: null
+        };
+        
+        // --- Shift Times Configuration ---
+        const shiftConfig = {
+            Pagi: { start: { hour: 8, minute: 0 }, end: { hour: 17, minute: 0 } },
+            Sore: { start: { hour: 15, minute: 0 }, end: { hour: 21, minute: 30 } }
+        };
+
+        // --- Functions ---
+        function showToast(message, isSuccess = true) {
+            toastMessage.textContent = message;
+            toast.className = toast.className.replace(/bg-gray-800|bg-red-500/, isSuccess ? 'bg-gray-800' : 'bg-red-500');
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 4000);
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            currentDatetime.textContent = `${now.toLocaleDateString('id-ID', options)} - ${now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+        }
+
+        function switchTab(tabName) {
+            Object.keys(tabs).forEach(key => {
+                const isSelected = key === tabName;
+                tabs[key].classList.toggle('tab-active', isSelected);
+                tabs[key].classList.toggle('tab-inactive', !isSelected);
+                contents[key].classList.toggle('hidden', !isSelected);
+            });
+            
+            if (tabName === 'pulang') {
+                loadAttendanceData();
+            }
+        }
+
+        function getLocation(displayElement, lokasiState, callback) {
+            if (!navigator.geolocation) {
+                showToast('Browser tidak mendukung geolokasi.', false);
+                return;
+            }
+            displayElement.textContent = 'Mencari lokasi...';
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    lokasiState.latitude = position.coords.latitude;
+                    lokasiState.longitude = position.coords.longitude;
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lokasiState.latitude}&lon=${lokasiState.longitude}`);
+                        const data = await response.json();
+                        lokasiState.alamat = data.display_name || 'Alamat tidak ditemukan';
+                        displayElement.textContent = lokasiState.alamat;
+                        lokasiState.ready = true;
+                    } catch (error) {
+                        lokasiState.alamat = `Lat: ${lokasiState.latitude.toFixed(4)}, Lon: ${lokasiState.longitude.toFixed(4)}`;
+                        displayElement.textContent = 'Gagal dapat nama jalan, koordinat tersimpan.';
+                        lokasiState.ready = true; 
+                    } finally {
+                        callback(true);
+                    }
+                },
+                (error) => {
+                    displayElement.textContent = 'Gagal mendapatkan lokasi.';
+                    showToast('Gagal, pastikan izin lokasi aktif.', false);
+                    callback(false);
+                }
+            );
+        }
+        
+        function formatDuration(totalSeconds) {
+            if (totalSeconds <= 0) return '0 menit 0 detik';
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            return `${minutes} menit ${seconds} detik`;
+        }
+        
+        function calculateLateness(now, shift) {
+            const shiftStartTime = new Date(now);
+            shiftStartTime.setHours(shiftConfig[shift].start.hour, shiftConfig[shift].start.minute, 0, 0);
+            const diffSeconds = (now.getTime() - shiftStartTime.getTime()) / 1000;
+            return diffSeconds > 0 ? formatDuration(diffSeconds) : 'Tepat Waktu';
+        }
+
+        function calculateOvertime(now, shift) {
+            const shiftEndTime = new Date(now);
+            shiftEndTime.setHours(shiftConfig[shift].end.hour, shiftConfig[shift].end.minute, 0, 0);
+            const diffSeconds = (now.getTime() - shiftEndTime.getTime()) / 1000;
+            return diffSeconds > 0 ? formatDuration(diffSeconds) : 'Tidak Lembur';
+        }
+        
+        // Format nama untuk konsistensi
+        function formatNama(nama) {
+            return nama.trim().toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+        }
+        
+        // Fungsi untuk memuat data absen datang
+        async function loadAttendanceData() {
+            try {
+                loadingText.textContent = "Memuat data absen datang...";
+                loadingSpinner.classList.remove("hidden");
+                attendanceList.innerHTML = '';
+                dataFixOptions.classList.add('hidden');
+                
+                const response = await fetch(`${SCRIPT_URL}?action=get_attendance&nama=${encodeURIComponent(state.namaFormatted)}`);
+                const result = await response.json();
+                
+                loadingSpinner.classList.add("hidden");
+                
+                if (result.result === "success" && result.data && result.data.length > 0) {
+                    loadingText.textContent = `Ditemukan ${result.data.length} data absen datang`;
+                    
+                    result.data.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'attendance-item p-3 bg-white rounded border cursor-pointer';
+                        div.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="font-medium">${item.tanggal}</p>
+                                    <p class="text-sm text-gray-600">${item.waktu} - Shift ${item.shift}</p>
+                                    <p class="text-xs text-gray-500">${item.lokasi ? item.lokasi.substring(0, 40) + '...' : 'Lokasi tidak tersedia'}</p>
+                                </div>
+                                <span class="status-badge bg-blue-100 text-blue-800">Belum Pulang</span>
+                            </div>
+                        `;
+                        
+                        div.addEventListener('click', () => {
+                            document.querySelectorAll('.attendance-item').forEach(el => {
+                                el.classList.remove('selected');
+                            });
+                            
+                            div.classList.add('selected');
+                            state.selectedAttendance = item;
+                            absenPulangBtn.disabled = !state.lokasiPulang.ready;
+                        });
+                        
+                        attendanceList.appendChild(div);
+                    });
+                } else {
+                    loadingText.textContent = "Tidak ada data absen datang yang belum dipulangi";
+                    dataFixOptions.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("Error loading attendance data:", error);
+                loadingText.textContent = "Gagal memuat data absen";
+                dataFixOptions.classList.remove('hidden');
+            }
+        }
+        
+        // Fungsi untuk memperbaiki data
+        async function fixUserData() {
+            try {
+                showToast('Memperbaiki data...', true);
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'fix_user_data',
+                        nama_lama: state.nama,
+                        nama_baru: state.namaFormatted
+                    }),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                });
+                
+                const result = await response.json();
+                if (result.result === "success") {
+                    showToast('Data berhasil diperbaiki!', true);
+                    loadAttendanceData();
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error("Error fixing user data:", error);
+                showToast('Gagal memperbaiki data: ' + error.message, false);
+            }
+        }
+        
+        // Fungsi untuk absen pulang manual
+        function setupManualAbsenPulang() {
+            const now = new Date();
+            const shift = document.querySelector('input[name="shift"]:checked').value;
+            
+            state.selectedAttendance = {
+                id: 'manual-' + Date.now(),
+                tanggal: formatTanggal(now),
+                waktu: '00:00:00',
+                shift: shift,
+                lokasi: 'Absen manual - data tidak ditemukan'
+            };
+            
+            showToast('Mode absen manual diaktifkan. Pastikan data benar sebelum mengirim.', true);
+            absenPulangBtn.disabled = !state.lokasiPulang.ready;
+        }
+        
+        async function handleAbsenDatang(buttonElement) {
+            if (SCRIPT_URL.includes('GANTI_DENGAN_URL')) {
+                showToast('URL Google Script belum diatur!', false);
+                return;
+            }
+
+            const originalButtonText = buttonElement.textContent;
+            buttonElement.disabled = true;
+            buttonElement.textContent = 'MENGIRIM...';
+            
+            const now = new Date();
+            const shift = document.querySelector('input[name="shift"]:checked').value;
+
+            let payload = {
+                action: 'absen_datang',
+                tanggal: formatTanggal(now),
+                nama: state.namaFormatted,
+                shift: shift,
+                waktu: now.toLocaleTimeString('id-ID', { hour12: false }),
+                lokasi: state.lokasiDatang.alamat,
+                keterlambatan: calculateLateness(now, shift),
+                latitude: state.lokasiDatang.latitude,
+                longitude: state.lokasiDatang.longitude
+            };
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                });
+                
+                const result = await response.json();
+
+                if (result.result === "success") {
+                    showToast('Absen datang berhasil dikirim!', true);
+                    state.lokasiDatang = { alamat: '', latitude: null, longitude: null, ready: false };
+                    locationDisplay.textContent = 'Lokasi akan tampil di sini...';
+                    locationBtn.disabled = false;
+                } else {
+                    throw new Error(result.message || 'Script Google merespons error.');
+                }
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                showToast(`Gagal mengirim. Detail: ${error.message}`, false);
+            } finally {
+                buttonElement.disabled = false;
+                buttonElement.textContent = originalButtonText;
+            }
+        }
+        
+        async function handleAbsenPulang(buttonElement) {
+            if (!state.selectedAttendance) {
+                showToast('Pilih absen datang terlebih dahulu!', false);
+                return;
+            }
+
+            const originalButtonText = buttonElement.textContent;
+            buttonElement.disabled = true;
+            buttonElement.textContent = 'MENGIRIM...';
+            
+            const now = new Date();
+            const shift = document.querySelector('input[name="shift"]:checked').value;
+
+            let payload = {
+                action: 'absen_pulang',
+                absen_datang_id: state.selectedAttendance.id,
+                tanggal: formatTanggal(now),
+                nama: state.namaFormatted,
+                shift: shift,
+                waktu: now.toLocaleTimeString('id-ID', { hour12: false }),
+                lokasi: state.lokasiPulang.alamat,
+                lembur: calculateOvertime(now, shift),
+                latitude: state.lokasiPulang.latitude,
+                longitude: state.lokasiPulang.longitude
+            };
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                });
+                
+                const result = await response.json();
+
+                if (result.result === "success") {
+                    showToast('Absen pulang berhasil dikirim!', true);
+                    state.lokasiPulang = { alamat: '', latitude: null, longitude: null, ready: false };
+                    state.selectedAttendance = null;
+                    locationDisplayPulang.textContent = 'Lokasi akan tampil di sini...';
+                    locationBtnPulang.disabled = false;
+                    loadAttendanceData();
+                } else {
+                    throw new Error(result.message || 'Script Google merespons error.');
+                }
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                showToast(`Gagal mengirim. Detail: ${error.message}`, false);
+            } finally {
+                buttonElement.disabled = false;
+                buttonElement.textContent = originalButtonText;
+            }
+        }
+
+        // Fungsi untuk memformat tanggal dengan konsisten
+        function formatTanggal(date) {
+            const hari = date.getDate();
+            const bulan = date.toLocaleString('id-ID', { month: 'long' });
+            const tahun = date.getFullYear();
+            return `${hari} ${bulan} ${tahun}`;
+        }
+
+        // --- Event Listeners ---
+        startBtn.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            if (name) {
+                state.nama = name;
+                state.namaFormatted = formatNama(name);
+                displayName.textContent = state.namaFormatted;
+                welcomeModal.style.display = 'none';
+                mainContent.classList.remove('hidden');
+                mainContent.classList.add('fade-in');
+            } else {
+                showToast('Nama tidak boleh kosong ya!', false);
+            }
+        });
+        
+        nameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') startBtn.click(); });
+
+        Object.keys(tabs).forEach(key => tabs[key].addEventListener('click', () => switchTab(key)));
+
+        locationBtn.addEventListener('click', (e) => {
+            e.currentTarget.disabled = true;
+            getLocation(locationDisplay, state.lokasiDatang, (success) => {
+                absenDatangBtn.disabled = !success;
+                if (!success) e.currentTarget.disabled = false;
+            });
+        });
+        
+        locationBtnPulang.addEventListener('click', (e) => {
+            e.currentTarget.disabled = true;
+            getLocation(locationDisplayPulang, state.lokasiPulang, (success) => {
+                absenPulangBtn.disabled = !success || !state.selectedAttendance;
+                if (!success) e.currentTarget.disabled = false;
+            });
+        });
+
+        absenDatangBtn.addEventListener('click', () => handleAbsenDatang(absenDatangBtn));
+        absenPulangBtn.addEventListener('click', () => handleAbsenPulang(absenPulangBtn));
+        fixDataBtn.addEventListener('click', fixUserData);
+        manualAbsenBtn.addEventListener('click', setupManualAbsenPulang);
+
+        // --- Initialisation ---
+        updateDateTime();
+        setInterval(updateDateTime, 1000 * 60);
+    </script>
+
+</body>
+</html>
