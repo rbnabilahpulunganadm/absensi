@@ -120,6 +120,9 @@
             margin-bottom: 2px;
             font-size: 12px;
             cursor: pointer;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .calendar-event.pagi {
             background-color: #c6f6d5;
@@ -128,10 +131,6 @@
         .calendar-event.sore {
             background-color: #fed7d7;
             border-left: 3px solid #e53e3e;
-        }
-        .calendar-event.malam {
-            background-color: #e9d8fd;
-            border-left: 3px solid #805ad5;
         }
         .stat-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -153,7 +152,7 @@
         }
         .chart-container {
             position: relative;
-            height: 300px;
+            height: 350px;
             width: 100%;
         }
         .shift-pagi {
@@ -222,7 +221,7 @@
             </div>
         </div>
 
-        <!-- Tabs - Tab Admin selalu ditampilkan -->
+        <!-- Tabs -->
         <div class="flex border-b">
             <button id="tab-datang" class="flex-1 py-3 text-center font-medium tab-active">Absen Datang</button>
             <button id="tab-pulang" class="flex-1 py-3 text-center font-medium tab-inactive">Absen Pulang</button>
@@ -414,22 +413,15 @@
                             <button id="next-month" class="btn-secondary px-4 py-2 rounded-lg kawaii-shadow">Bulan Selanjutnya →</button>
                         </div>
                         
-                        <!-- Legend -->
-                        <div class="flex flex-wrap gap-4 mb-4">
-                            <div class="flex items-center space-x-2">
-                                <div class="w-4 h-4 bg-green-200 border border-green-500 rounded"></div>
-                                <span class="text-sm">Shift Pagi</span>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <div class="w-4 h-4 bg-red-200 border border-red-500 rounded"></div>
-                                <span class="text-sm">Shift Sore</span>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <div class="w-4 h-4 bg-purple-200 border border-purple-500 rounded"></div>
-                                <span class="text-sm">Shift Malam</span>
-                            </div>
+                        <div class="grid grid-cols-7 text-center font-bold py-2 bg-gray-100 text-sm">
+                            <div>Min</div>
+                            <div>Sen</div>
+                            <div>Sel</div>
+                            <div>Rab</div>
+                            <div>Kam</div>
+                            <div>Jum</div>
+                            <div>Sab</div>
                         </div>
-                        
                         <div id="calendar-container" class="grid grid-cols-7 gap-1">
                             <!-- Kalender akan diisi oleh JavaScript -->
                         </div>
@@ -443,16 +435,16 @@
                         <div class="bg-blue-50 p-4 rounded-lg mb-6">
                             <h4 class="font-bold text-blue-800 mb-2">Pilih Periode Statistik</h4>
                             <div class="flex space-x-4">
-                                <button id="stats-weekly" class="btn-secondary px-4 py-2 rounded-lg kawaii-shadow">Mingguan</button>
-                                <button id="stats-monthly" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg kawaii-shadow">Bulanan</button>
-                                <button id="stats-yearly" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg kawaii-shadow">Tahunan</button>
+                                <button data-period="weekly" class="stats-period-btn btn-secondary px-4 py-2 rounded-lg kawaii-shadow">Mingguan</button>
+                                <button data-period="monthly" class="stats-period-btn bg-gray-300 text-gray-700 px-4 py-2 rounded-lg kawaii-shadow">Bulanan</button>
+                                <button data-period="yearly" class="stats-period-btn bg-gray-300 text-gray-700 px-4 py-2 rounded-lg kawaii-shadow">Tahunan</button>
                             </div>
                         </div>
 
                         <!-- Summary Cards -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                             <div class="stat-card">
-                                <h4 class="text-lg font-bold mb-2">Total Absensi</h4>
+                                <h4 class="text-lg font-bold mb-2">Total Absensi Bulan Ini</h4>
                                 <p id="total-absensi" class="text-3xl font-bold">0</p>
                             </div>
                             <div class="stat-card">
@@ -466,8 +458,8 @@
                         </div>
 
                         <!-- Charts Container -->
-                        <div id="charts-container">
-                            <!-- Charts will be loaded here based on period selection -->
+                        <div id="charts-container" class="mt-6">
+                             <!-- Grafik akan dimuat di sini -->
                         </div>
                     </div>
 
@@ -483,7 +475,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama</label>
-                                    <input type="text" id="edit-nama" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                                    <input type="text" id="edit-nama" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" readonly>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Shift</label>
@@ -495,19 +487,19 @@
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Datang</label>
-                                        <input type="time" id="edit-waktu-datang" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                                        <input type="time" id="edit-waktu-datang" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" step="1">
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Pulang</label>
-                                        <input type="time" id="edit-waktu-pulang" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                                        <input type="time" id="edit-waktu-pulang" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" step="1">
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Keterlambatan</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Keterlambatan (Otomatis/Manual)</label>
                                     <input type="text" id="edit-keterlambatan" placeholder="Contoh: 5 menit" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Lembur</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Lembur (Otomatis/Manual)</label>
                                     <input type="text" id="edit-lembur" placeholder="Contoh: 30 menit" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
                                 </div>
                                 <div class="flex space-x-4 mt-6">
@@ -525,7 +517,7 @@
     <!-- Notification Toast -->
     <div id="toast" class="fixed top-4 right-4 bg-white p-4 rounded-lg shadow-lg border-l-4 border-green-500 hidden z-50 max-w-sm fade-in">
         <div class="flex items-center">
-            <div class="mr-3 text-green-500">
+            <div id="toast-icon" class="mr-3 text-green-500">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -537,10 +529,10 @@
     </div>
 
     <script>
-        // URL Google Apps Script Web App
+        // URL Google Apps Script Anda
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZxc9s1hUgn04AM3OWV4JLEr1l_oHn8VM0L4Cwaqev54gKag31teoWNSFHa3JBB4FKMQ/exec";
 
-        // State management
+        // State management untuk aplikasi
         let state = {
             currentUser: null,
             currentTab: 'datang',
@@ -556,21 +548,16 @@
             selectedExports: new Set()
         };
 
-        // DOM Elements
+        // Cache elemen DOM untuk performa
         const elements = {
-            // Modals
             welcomeModal: document.getElementById('welcome-modal'),
             adminLoginModal: document.getElementById('admin-login-modal'),
             mainContent: document.getElementById('main-content'),
             editModal: document.getElementById('edit-modal'),
             pdfExportModal: document.getElementById('pdf-export-modal'),
             toast: document.getElementById('toast'),
-            
-            // Inputs
             nameInput: document.getElementById('name-input'),
             adminPassword: document.getElementById('admin-password'),
-            
-            // Buttons
             startBtn: document.getElementById('start-btn'),
             adminAccessBtn: document.getElementById('admin-access-btn'),
             userLogout: document.getElementById('user-logout'),
@@ -585,16 +572,12 @@
             generatePdf: document.getElementById('generate-pdf'),
             generatePdfBtn: document.getElementById('generate-pdf-btn'),
             cancelPdfExport: document.getElementById('cancel-pdf-export'),
-            
-            // Tabs
             tabDatang: document.getElementById('tab-datang'),
             tabPulang: document.getElementById('tab-pulang'),
             tabAdmin: document.getElementById('tab-admin'),
             contentDatang: document.getElementById('content-datang'),
             contentPulang: document.getElementById('content-pulang'),
             contentAdmin: document.getElementById('content-admin'),
-            
-            // Admin elements
             adminAccessRequired: document.getElementById('admin-access-required'),
             adminContent: document.getElementById('admin-content'),
             refreshAdminData: document.getElementById('refresh-admin-data'),
@@ -616,12 +599,8 @@
             currentMonth: document.getElementById('current-month'),
             prevMonth: document.getElementById('prev-month'),
             nextMonth: document.getElementById('next-month'),
-            statsWeekly: document.getElementById('stats-weekly'),
-            statsMonthly: document.getElementById('stats-monthly'),
-            statsYearly: document.getElementById('stats-yearly'),
+            statsPeriodBtns: document.querySelectorAll('.stats-period-btn'),
             chartsContainer: document.getElementById('charts-container'),
-            
-            // Edit form
             editForm: document.getElementById('edit-form'),
             editId: document.getElementById('edit-id'),
             editTanggal: document.getElementById('edit-tanggal'),
@@ -632,666 +611,393 @@
             editKeterlambatan: document.getElementById('edit-keterlambatan'),
             editLembur: document.getElementById('edit-lembur'),
             cancelEdit: document.getElementById('cancel-edit'),
-            
-            // Display elements
             displayName: document.getElementById('display-name'),
             currentDatetime: document.getElementById('current-datetime'),
             locationDisplay: document.getElementById('location-display'),
             locationDisplayPulang: document.getElementById('location-display-pulang'),
             absenList: document.getElementById('absen-list'),
             searchAbsen: document.getElementById('search-absen'),
-            
-            // Statistics
             totalAbsensi: document.getElementById('total-absensi'),
             avgLate: document.getElementById('avg-late'),
             totalLate: document.getElementById('total-late')
         };
 
-        // Initialize the application
         function init() {
             setupEventListeners();
             updateDateTime();
             setInterval(updateDateTime, 1000);
-            
-            // Check if we're returning from a refresh and have a user stored
             const storedUser = localStorage.getItem('currentUser');
             const storedAdmin = localStorage.getItem('isAdmin') === 'true';
-            
             if (storedUser) {
                 state.currentUser = storedUser;
                 state.isAdmin = storedAdmin;
                 elements.welcomeModal.classList.add('hidden');
                 elements.mainContent.classList.remove('hidden');
                 elements.displayName.textContent = storedUser;
-                
-                // Update admin state
                 updateAdminState();
             }
         }
 
-        // Set up event listeners
         function setupEventListeners() {
-            // Welcome modal
             elements.startBtn.addEventListener('click', handleStart);
-            elements.nameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleStart();
-            });
-            
-            // Header buttons
+            elements.nameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleStart(); });
             elements.adminAccessBtn.addEventListener('click', showAdminLogin);
             elements.userLogout.addEventListener('click', handleLogout);
-            
-            // Admin login modal
             elements.adminLoginSubmit.addEventListener('click', handleAdminLogin);
             elements.adminLoginCancel.addEventListener('click', hideAdminLogin);
-            elements.adminPassword.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleAdminLogin();
-            });
-            
-            // Admin login from tab
+            elements.adminPassword.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleAdminLogin(); });
             elements.adminLoginFromTab.addEventListener('click', showAdminLogin);
-            
-            // Tabs
             elements.tabDatang.addEventListener('click', () => switchTab('datang'));
             elements.tabPulang.addEventListener('click', () => switchTab('pulang'));
             elements.tabAdmin.addEventListener('click', () => switchTab('admin'));
-            
-            // Location buttons
             elements.getLocationBtn.addEventListener('click', getCurrentLocation);
             elements.getLocationBtnPulang.addEventListener('click', getCurrentLocationPulang);
-            
-            // Absen buttons
             elements.absenDatangBtn.addEventListener('click', submitAbsenDatang);
             elements.absenPulangBtn.addEventListener('click', submitAbsenPulang);
             elements.refreshAbsenBtn.addEventListener('click', loadAbsenDatangList);
-            
-            // Search
             elements.searchAbsen.addEventListener('input', filterAbsenList);
-            
-            // Admin controls
             elements.refreshAdminData.addEventListener('click', loadAllAttendanceData);
-            elements.exportData.addEventListener('click', exportDataToCSV);
+            elements.exportData.addEventListener('click', () => showToast('Fitur export CSV akan segera hadir!', 'info'));
             elements.fixUserData.addEventListener('click', showFixUserDataModal);
-            elements.generatePdf.addEventListener('click', showPdfExportModal);
-            elements.generatePdfBtn.addEventListener('click', generatePdfReport);
-            elements.cancelPdfExport.addEventListener('click', hidePdfExportModal);
-            
-            // PDF Export options
-            document.querySelectorAll('.export-option').forEach(option => {
-                option.addEventListener('click', (e) => {
-                    const type = e.currentTarget.dataset.type;
-                    toggleExportOption(type, e.currentTarget);
-                });
-            });
-            
-            // Filters
+            elements.generatePdf.addEventListener('click', () => showToast('Fitur export PDF akan segera hadir!', 'info'));
             elements.applyFilters.addEventListener('click', applyAdminFilters);
             elements.clearFilters.addEventListener('click', clearAdminFilters);
-            
-            // View options
             elements.viewTable.addEventListener('click', () => switchAdminView('table'));
             elements.viewCalendar.addEventListener('click', () => switchAdminView('calendar'));
             elements.viewStatistics.addEventListener('click', () => switchAdminView('statistics'));
-            
-            // Calendar navigation
             elements.prevMonth.addEventListener('click', prevMonth);
             elements.nextMonth.addEventListener('click', nextMonth);
-            
-            // Statistics period
-            elements.statsWeekly.addEventListener('click', () => switchStatsPeriod('weekly'));
-            elements.statsMonthly.addEventListener('click', () => switchStatsPeriod('monthly'));
-            elements.statsYearly.addEventListener('click', () => switchStatsPeriod('yearly'));
-            
-            // Edit modal
+            elements.statsPeriodBtns.forEach(btn => {
+                btn.addEventListener('click', () => switchStatsPeriod(btn.dataset.period));
+            });
             elements.editForm.addEventListener('submit', handleEditSubmit);
             elements.cancelEdit.addEventListener('click', hideEditModal);
+            elements.editWaktuDatang.addEventListener('change', autoCalculateEditFields);
+            elements.editWaktuPulang.addEventListener('change', autoCalculateEditFields);
+            elements.editShift.addEventListener('change', autoCalculateEditFields);
         }
 
-        // Handle start button click
         function handleStart() {
             const name = elements.nameInput.value.trim();
             if (!name) {
                 showToast('Harap masukkan nama kamu!', 'error');
                 return;
             }
-            
             state.currentUser = name;
             localStorage.setItem('currentUser', name);
             elements.displayName.textContent = name;
             elements.welcomeModal.classList.add('hidden');
             elements.mainContent.classList.remove('hidden');
-            
             showToast(`Selamat datang, ${name}!`, 'success');
-            
-            // Update admin state
             updateAdminState();
         }
 
-        // Handle logout
         function handleLogout() {
             state.currentUser = null;
             state.isAdmin = false;
             localStorage.removeItem('currentUser');
             localStorage.removeItem('isAdmin');
-            
             elements.mainContent.classList.add('hidden');
             elements.welcomeModal.classList.remove('hidden');
             elements.nameInput.value = '';
-            
             showToast('Berhasil logout!', 'success');
         }
 
-        // Show admin login modal
-        function showAdminLogin() {
-            elements.adminLoginModal.classList.remove('hidden');
-        }
-
-        // Hide admin login modal
+        function showAdminLogin() { elements.adminLoginModal.classList.remove('hidden'); }
         function hideAdminLogin() {
             elements.adminLoginModal.classList.add('hidden');
             elements.adminPassword.value = '';
         }
 
-        // Handle admin login
         function handleAdminLogin() {
             const password = elements.adminPassword.value.trim();
-            if (password === '112211') {
+            if (password === '112211') { // Harap ganti dengan metode autentikasi yang lebih aman
                 state.isAdmin = true;
                 localStorage.setItem('isAdmin', 'true');
                 hideAdminLogin();
                 updateAdminState();
-                
-                // If on admin tab, load data
                 if (state.currentTab === 'admin') {
                     loadAllAttendanceData();
                 }
-                
                 showToast('Berhasil login sebagai admin!', 'success');
             } else {
                 showToast('Password admin salah!', 'error');
             }
         }
 
-        // Update admin state in UI
         function updateAdminState() {
-            if (state.isAdmin) {
-                // User is admin
-                elements.tabAdmin.classList.remove('admin-locked');
-                elements.adminAccessBtn.textContent = 'Admin Mode';
-                elements.adminAccessBtn.classList.remove('bg-purple-500');
-                elements.adminAccessBtn.classList.add('bg-green-500');
-                
-                // Show admin content if on admin tab
-                if (state.currentTab === 'admin') {
-                    elements.adminAccessRequired.classList.add('hidden');
-                    elements.adminContent.classList.remove('hidden');
-                }
-            } else {
-                // User is not admin
-                elements.tabAdmin.classList.add('admin-locked');
-                elements.adminAccessBtn.textContent = 'Admin Access';
-                elements.adminAccessBtn.classList.remove('bg-green-500');
-                elements.adminAccessBtn.classList.add('bg-purple-500');
-                
-                // Show access required message if on admin tab
-                if (state.currentTab === 'admin') {
-                    elements.adminAccessRequired.classList.remove('hidden');
-                    elements.adminContent.classList.add('hidden');
-                }
+            const isAdmin = state.isAdmin;
+            elements.tabAdmin.classList.toggle('admin-locked', !isAdmin);
+            elements.adminAccessBtn.textContent = isAdmin ? 'Admin Mode' : 'Admin Access';
+            elements.adminAccessBtn.classList.toggle('bg-purple-500', !isAdmin);
+            elements.adminAccessBtn.classList.toggle('bg-green-500', isAdmin);
+            if (state.currentTab === 'admin') {
+                elements.adminAccessRequired.classList.toggle('hidden', isAdmin);
+                elements.adminContent.classList.toggle('hidden', !isAdmin);
             }
         }
 
-        // Switch between tabs
         function switchTab(tab) {
-            // Update tab states
-            elements.tabDatang.classList.remove('tab-active');
-            elements.tabDatang.classList.add('tab-inactive');
-            elements.tabPulang.classList.remove('tab-active');
-            elements.tabPulang.classList.add('tab-inactive');
-            elements.tabAdmin.classList.remove('tab-active');
-            elements.tabAdmin.classList.add('tab-inactive');
-            
-            elements.contentDatang.classList.add('hidden');
-            elements.contentPulang.classList.add('hidden');
-            elements.contentAdmin.classList.add('hidden');
-            
-            // Activate selected tab
             state.currentTab = tab;
-            switch(tab) {
-                case 'datang':
-                    elements.tabDatang.classList.remove('tab-inactive');
-                    elements.tabDatang.classList.add('tab-active');
-                    elements.contentDatang.classList.remove('hidden');
-                    break;
-                case 'pulang':
-                    elements.tabPulang.classList.remove('tab-inactive');
-                    elements.tabPulang.classList.add('tab-active');
-                    elements.contentPulang.classList.remove('hidden');
-                    loadAbsenDatangList();
-                    break;
-                case 'admin':
-                    elements.tabAdmin.classList.remove('tab-inactive');
-                    elements.tabAdmin.classList.add('tab-active');
-                    elements.contentAdmin.classList.remove('hidden');
-                    
-                    // Check if user is admin
-                    if (state.isAdmin) {
-                        elements.adminAccessRequired.classList.add('hidden');
-                        elements.adminContent.classList.remove('hidden');
-                        loadAllAttendanceData();
-                    } else {
-                        elements.adminAccessRequired.classList.remove('hidden');
-                        elements.adminContent.classList.add('hidden');
-                    }
-                    break;
+            ['datang', 'pulang', 'admin'].forEach(t => {
+                const tabElement = elements[`tab${t.charAt(0).toUpperCase() + t.slice(1)}`];
+                const contentElement = elements[`content${t.charAt(0).toUpperCase() + t.slice(1)}`];
+                tabElement.classList.toggle('tab-active', t === tab);
+                tabElement.classList.toggle('tab-inactive', t !== tab);
+                contentElement.classList.toggle('hidden', t !== tab);
+            });
+            
+            if (tab === 'pulang') loadAbsenDatangList();
+            if (tab === 'admin') {
+                updateAdminState();
+                if (state.isAdmin && state.allAttendanceData.length === 0) {
+                     loadAllAttendanceData();
+                }
             }
         }
 
-        // Get current location for datang
-        function getCurrentLocation() {
-            elements.getLocationBtn.disabled = true;
-            elements.getLocationBtn.innerHTML = '<div class="loading-spinner"></div>Mendapatkan lokasi...';
+        function getLocation(displayElement, buttonElement, targetButtonToEnable) {
+            buttonElement.disabled = true;
+            buttonElement.innerHTML = '<div class="loading-spinner"></div>Mendapatkan lokasi...';
             
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
+                        const { latitude: lat, longitude: lng } = position.coords;
                         state.currentLocation = { lat, lng };
-                        
-                        // Get address from coordinates
-                        getAddressFromCoords(lat, lng, elements.locationDisplay);
-                        
-                        elements.absenDatangBtn.disabled = false;
-                        elements.getLocationBtn.disabled = false;
-                        elements.getLocationBtn.textContent = '📍 Dapatkan Lokasi';
+                        displayElement.textContent = `Lokasi terdeteksi: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                        if (targetButtonToEnable) targetButtonToEnable.disabled = false;
+                        buttonElement.disabled = false;
+                        buttonElement.textContent = '📍 Dapatkan Lokasi';
                     },
                     (error) => {
-                        handleLocationError(error, elements.locationDisplay);
-                        elements.getLocationBtn.disabled = false;
-                        elements.getLocationBtn.textContent = '📍 Dapatkan Lokasi';
-                    }
+                        handleLocationError(error, displayElement);
+                        buttonElement.disabled = false;
+                        buttonElement.textContent = '📍 Dapatkan Lokasi';
+                    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
             } else {
-                elements.locationDisplay.textContent = 'Geolocation tidak didukung oleh browser ini';
-                elements.getLocationBtn.disabled = false;
-                elements.getLocationBtn.textContent = '📍 Dapatkan Lokasi';
+                displayElement.textContent = 'Geolocation tidak didukung oleh browser ini';
+                buttonElement.disabled = false;
+                buttonElement.textContent = '📍 Dapatkan Lokasi';
             }
         }
+        
+        function getCurrentLocation() { getLocation(elements.locationDisplay, elements.getLocationBtn, elements.absenDatangBtn); }
+        function getCurrentLocationPulang() { getLocation(elements.locationDisplayPulang, elements.getLocationBtnPulang, elements.absenPulangBtn); }
 
-        // Get current location for pulang
-        function getCurrentLocationPulang() {
-            elements.getLocationBtnPulang.disabled = true;
-            elements.getLocationBtnPulang.innerHTML = '<div class="loading-spinner"></div>Mendapatkan lokasi...';
-            
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        state.currentLocation = { lat, lng };
-                        
-                        // Get address from coordinates
-                        getAddressFromCoords(lat, lng, elements.locationDisplayPulang);
-                        
-                        elements.absenPulangBtn.disabled = false;
-                        elements.getLocationBtnPulang.disabled = false;
-                        elements.getLocationBtnPulang.textContent = '📍 Dapatkan Lokasi';
-                    },
-                    (error) => {
-                        handleLocationError(error, elements.locationDisplayPulang);
-                        elements.getLocationBtnPulang.disabled = false;
-                        elements.getLocationBtnPulang.textContent = '📍 Dapatkan Lokasi';
-                    }
-                );
-            } else {
-                elements.locationDisplayPulang.textContent = 'Geolocation tidak didukung oleh browser ini';
-                elements.getLocationBtnPulang.disabled = false;
-                elements.getLocationBtnPulang.textContent = '📍 Dapatkan Lokasi';
-            }
-        }
-
-        // Get address from coordinates
-        function getAddressFromCoords(lat, lng, displayElement) {
-            // For demo purposes, we'll use a simple reverse geocoding
-            // In a real app, you would use Google Maps Geocoding API or similar
-            displayElement.textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
-            
-            // Simulate API call delay
-            setTimeout(() => {
-                displayElement.textContent = `Lokasi terdeteksi: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-            }, 1000);
-        }
-
-        // Handle location error
         function handleLocationError(error, displayElement) {
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    displayElement.textContent = "User menolak permintaan geolocation";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    displayElement.textContent = "Informasi lokasi tidak tersedia";
-                    break;
-                case error.TIMEOUT:
-                    displayElement.textContent = "Permintaan lokasi timeout";
-                    break;
-                case error.UNKNOWN_ERROR:
-                    displayElement.textContent = "Terjadi error yang tidak diketahui";
-                    break;
-            }
+            const messages = {
+                [error.PERMISSION_DENIED]: "Anda harus mengizinkan akses lokasi.",
+                [error.POSITION_UNAVAILABLE]: "Informasi lokasi tidak tersedia.",
+                [error.TIMEOUT]: "Waktu permintaan lokasi habis.",
+            };
+            displayElement.textContent = messages[error.code] || "Gagal mendapatkan lokasi.";
+            showToast(displayElement.textContent, 'error');
         }
 
-        // Submit absen datang
+        function calculateKeterlambatan(shift, checkInTime) {
+            const shiftStartHour = shift === "Pagi" ? 8 : 15;
+            const lateMinutes = (checkInTime.getHours() - shiftStartHour) * 60 + checkInTime.getMinutes();
+            return lateMinutes > 0 ? `${lateMinutes} menit` : "Tepat Waktu";
+        }
+
+        function calculateLembur(shift, checkOutTime) {
+            const shiftEndHour = shift === "Pagi" ? 17 : 21;
+            const shiftEndMinute = shift === "Pagi" ? 0 : 30;
+            const overtimeMinutes = (checkOutTime.getHours() - shiftEndHour) * 60 + (checkOutTime.getMinutes() - shiftEndMinute);
+            return overtimeMinutes > 0 ? `${overtimeMinutes} menit` : "Tidak ada";
+        }
+        
         function submitAbsenDatang() {
             if (!state.currentLocation) {
                 showToast('Harap dapatkan lokasi terlebih dahulu!', 'error');
                 return;
             }
-            
             const shift = document.querySelector('input[name="shift"]:checked').value;
             const now = new Date();
-            const waktu = now.toTimeString().split(' ')[0]; // Format HH:MM:SS
-            
-            // Calculate keterlambatan
-            let keterlambatan = "Tepat Waktu";
-            if (shift === "Pagi" && now.getHours() >= 8) {
-                if (now.getHours() > 8 || (now.getHours() === 8 && now.getMinutes() > 0)) {
-                    const lateMinutes = (now.getHours() - 8) * 60 + now.getMinutes();
-                    keterlambatan = `${lateMinutes} menit`;
-                }
-            } else if (shift === "Sore" && now.getHours() >= 15) {
-                if (now.getHours() > 15 || (now.getHours() === 15 && now.getMinutes() > 0)) {
-                    const lateMinutes = (now.getHours() - 15) * 60 + now.getMinutes();
-                    keterlambatan = `${lateMinutes} menit`;
-                }
-            }
-            
-            const tanggal = formatDate(now);
-            
             const data = {
                 action: 'absen_datang',
                 nama: state.currentUser,
                 shift: shift,
-                tanggal: tanggal,
-                waktu: waktu,
+                tanggal: formatDate(now),
+                waktu: now.toTimeString().split(' ')[0],
                 lokasi: elements.locationDisplay.textContent,
-                keterlambatan: keterlambatan,
+                keterlambatan: calculateKeterlambatan(shift, now),
                 latitude: state.currentLocation.lat,
                 longitude: state.currentLocation.lng
             };
-            
-            elements.absenDatangBtn.disabled = true;
-            elements.absenDatangBtn.innerHTML = '<div class="loading-spinner"></div>Mengirim...';
-            
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.result === 'success') {
-                    showToast('Absen datang berhasil disimpan!', 'success');
-                    // Reset form
-                    elements.locationDisplay.textContent = 'Lokasi akan tampil di sini...';
-                    elements.absenDatangBtn.disabled = true;
-                } else {
-                    throw new Error(result.message);
-                }
-            })
-            .catch(error => {
-                showToast(`Error: ${error.message}`, 'error');
-            })
-            .finally(() => {
-                elements.absenDatangBtn.disabled = false;
-                elements.absenDatangBtn.textContent = 'Absen Datang & Kirim';
+            sendData(data, elements.absenDatangBtn, 'Absen Datang & Kirim', () => {
+                elements.locationDisplay.textContent = 'Lokasi akan tampil di sini...';
+                elements.absenDatangBtn.disabled = true;
             });
         }
 
-        // Submit absen pulang
         function submitAbsenPulang() {
             if (!state.currentLocation) {
                 showToast('Harap dapatkan lokasi terlebih dahulu!', 'error');
                 return;
             }
-            
             const selectedAbsen = document.querySelector('.attendance-item.selected');
             if (!selectedAbsen) {
                 showToast('Harap pilih absen datang yang sesuai!', 'error');
                 return;
             }
-            
-            const absenDatangId = selectedAbsen.dataset.id;
             const shift = document.querySelector('input[name="shift"]:checked').value;
             const now = new Date();
-            const waktu = now.toTimeString().split(' ')[0]; // Format HH:MM:SS
-            
-            // Calculate lembur
-            let lembur = "Tidak ada";
-            if (shift === "Pagi" && now.getHours() >= 17) {
-                if (now.getHours() > 17 || (now.getHours() === 17 && now.getMinutes() > 0)) {
-                    const overtimeMinutes = (now.getHours() - 17) * 60 + now.getMinutes();
-                    lembur = `${overtimeMinutes} menit`;
-                }
-            } else if (shift === "Sore" && now.getHours() >= 21) {
-                if (now.getHours() > 21 || (now.getHours() === 21 && now.getMinutes() > 30)) {
-                    const overtimeMinutes = (now.getHours() - 21) * 60 + (now.getMinutes() - 30);
-                    lembur = `${overtimeMinutes} menit`;
-                }
-            }
-            
-            const tanggal = formatDate(now);
-            
             const data = {
                 action: 'absen_pulang',
-                absen_datang_id: absenDatangId,
+                absen_datang_id: selectedAbsen.dataset.id,
                 nama: state.currentUser,
                 shift: shift,
-                tanggal: tanggal,
-                waktu: waktu,
+                tanggal: formatDate(now),
+                waktu: now.toTimeString().split(' ')[0],
                 lokasi: elements.locationDisplayPulang.textContent,
-                lembur: lembur,
+                lembur: calculateLembur(shift, now),
                 latitude: state.currentLocation.lat,
                 longitude: state.currentLocation.lng
             };
-            
-            elements.absenPulangBtn.disabled = true;
-            elements.absenPulangBtn.innerHTML = '<div class="loading-spinner"></div>Mengirim...';
-            
+            sendData(data, elements.absenPulangBtn, 'Absen Pulang & Kirim', () => {
+                elements.locationDisplayPulang.textContent = 'Lokasi akan tampil di sini...';
+                elements.absenPulangBtn.disabled = true;
+                loadAbsenDatangList();
+            });
+        }
+        
+        function sendData(data, button, buttonText, onSuccess) {
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<div class="loading-spinner"></div>Mengirim...';
+            }
             fetch(SCRIPT_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error(`Network response error: ${response.statusText}`);
+                return response.json();
+            })
             .then(result => {
                 if (result.result === 'success') {
-                    showToast('Absen pulang berhasil disimpan!', 'success');
-                    // Reset form
-                    elements.locationDisplayPulang.textContent = 'Lokasi akan tampil di sini...';
-                    elements.absenPulangBtn.disabled = true;
-                    loadAbsenDatangList();
+                    showToast(result.message || 'Aksi berhasil!', 'success');
+                    if (onSuccess) onSuccess(result);
                 } else {
-                    throw new Error(result.message);
+                    throw new Error(result.message || 'Terjadi kesalahan di server.');
                 }
             })
             .catch(error => {
-                showToast(`Error: ${error.message}`, 'error');
+                console.error('Fetch Error:', error);
+                showToast(`Gagal: ${error.message}`, 'error');
             })
             .finally(() => {
-                elements.absenPulangBtn.disabled = false;
-                elements.absenPulangBtn.textContent = 'Absen Pulang & Kirim';
-            });
-        }
-
-        // Load absen datang list for pulang tab
-        function loadAbsenDatangList() {
-            elements.absenList.innerHTML = '<p class="text-center text-gray-500 py-4">Memuat data...</p>';
-            
-            fetch(`${SCRIPT_URL}?action=get_attendance&nama=${encodeURIComponent(state.currentUser)}`)
-            .then(response => response.json())
-            .then(result => {
-                if (result.result === 'success') {
-                    state.absenDatangList = result.data;
-                    renderAbsenDatangList();
-                } else {
-                    throw new Error(result.message);
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = buttonText;
                 }
-            })
-            .catch(error => {
-                elements.absenList.innerHTML = `<p class="text-center text-red-500 py-4">Error: ${error.message}</p>`;
             });
         }
+        
+        async function fetchData(action) {
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=${action}`);
+                if (!response.ok) throw new Error(`Network response was not ok for action: ${action}`);
+                const result = await response.json();
+                if (result.result !== 'success') throw new Error(result.message);
+                return result;
+            } catch (error) {
+                showToast(`Gagal memuat data: ${error.message}`, 'error');
+                return null;
+            }
+        }
 
-        // Render absen datang list
+        async function loadAbsenDatangList() {
+            elements.absenList.innerHTML = '<p class="text-center text-gray-500 py-4">Memuat data...</p>';
+            const result = await fetchData(`get_attendance&nama=${encodeURIComponent(state.currentUser)}`);
+            if (result) {
+                state.absenDatangList = result.data;
+                renderAbsenDatangList();
+            } else {
+                elements.absenList.innerHTML = `<p class="text-center text-red-500 py-4">Gagal memuat daftar absen.</p>`;
+            }
+        }
+
         function renderAbsenDatangList() {
             if (state.absenDatangList.length === 0) {
-                elements.absenList.innerHTML = '<p class="text-center text-gray-500 py-4">Tidak ada data absen datang yang belum pulang</p>';
+                elements.absenList.innerHTML = '<p class="text-center text-gray-500 py-4">Tidak ada data absen datang yang belum pulang.</p>';
                 return;
             }
-            
-            let html = '';
-            state.absenDatangList.forEach(absen => {
-                html += `
-                    <div class="attendance-item bg-white p-3 rounded-lg border border-gray-200 cursor-pointer" data-id="${absen.id}">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="font-medium">${absen.tanggal}</p>
-                                <p class="text-sm text-gray-600">Shift: ${absen.shift} | Datang: ${absen.waktu}</p>
-                                <p class="text-xs text-gray-500 truncate">${absen.lokasi}</p>
-                            </div>
-                            <span class="status-badge bg-yellow-100 text-yellow-800">Belum Pulang</span>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            elements.absenList.innerHTML = html;
-            
-            // Add click event to items
-            document.querySelectorAll('.attendance-item').forEach(item => {
+            elements.absenList.innerHTML = state.absenDatangList.map(absen => `
+                <div class="attendance-item bg-white p-3 rounded-lg border border-gray-200 cursor-pointer" data-id="${absen.id}">
+                    <p class="font-medium">${absen.tanggal}</p>
+                    <p class="text-sm text-gray-600">Shift: ${absen.shift} | Datang: ${absen.waktu}</p>
+                </div>
+            `).join('');
+            elements.absenList.querySelectorAll('.attendance-item').forEach(item => {
                 item.addEventListener('click', () => {
-                    document.querySelectorAll('.attendance-item').forEach(i => i.classList.remove('selected'));
+                    elements.absenList.querySelectorAll('.attendance-item').forEach(i => i.classList.remove('selected'));
                     item.classList.add('selected');
                 });
             });
         }
-
-        // Filter absen list
+        
         function filterAbsenList() {
             const searchTerm = elements.searchAbsen.value.toLowerCase();
-            const items = elements.absenList.querySelectorAll('.attendance-item');
-            
-            items.forEach(item => {
-                const text = item.textContent.toLowerCase();
-                if (text.includes(searchTerm)) {
-                    item.style.display = 'block';
-                } else {
-                    item.style.display = 'none';
-                }
+            elements.absenList.querySelectorAll('.attendance-item').forEach(item => {
+                item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? 'block' : 'none';
             });
         }
 
-        // Load all attendance data for admin
-        function loadAllAttendanceData() {
-            if (!state.isAdmin) {
-                showToast('Anda harus login sebagai admin untuk mengakses data ini', 'error');
-                return;
+        async function loadAllAttendanceData() {
+            if (!state.isAdmin) return;
+            elements.adminTableBody.innerHTML = '<tr><td colspan="9" class="p-4 text-center">Memuat data...</td></tr>';
+            const result = await fetchData('get_all_attendance');
+            if(result) {
+                state.allAttendanceData = result.data;
+                state.filteredAttendanceData = result.data;
+                renderAdminTable();
+                renderCalendar();
+                loadSummaryStatistics(); // Memuat statistik ringkasan setelah data utama dimuat
+                switchStatsPeriod(state.currentStatsPeriod); // Memuat grafik default
+            } else {
+                elements.adminTableBody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-red-500">Gagal memuat data.</td></tr>`;
             }
-            
-            fetch(`${SCRIPT_URL}?action=get_all_attendance`)
-            .then(response => response.json())
-            .then(result => {
-                if (result.result === 'success') {
-                    state.allAttendanceData = result.data;
-                    state.filteredAttendanceData = result.data;
-                    renderAdminTable();
-                    renderCalendar();
-                    loadStatistics();
-                } else {
-                    throw new Error(result.message);
-                }
-            })
-            .catch(error => {
-                showToast(`Error: ${error.message}`, 'error');
-            });
         }
 
-        // Render admin table
         function renderAdminTable() {
             if (state.filteredAttendanceData.length === 0) {
-                elements.adminTableBody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">Tidak ada data absensi</td></tr>';
+                elements.adminTableBody.innerHTML = '<tr><td colspan="9" class="p-4 text-center">Tidak ada data.</td></tr>';
                 return;
             }
-            
-            let html = '';
-            state.filteredAttendanceData.forEach(item => {
-                const statusClass = item.status === 'Hadir' ? 'bg-yellow-100 text-yellow-800' : 
-                                  item.status === 'Pulang' ? 'bg-green-100 text-green-800' : 
-                                  'bg-blue-100 text-blue-800';
-                
-                html += `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="px-4 py-3">${item.tanggal}</td>
-                        <td class="px-4 py-3">${item.nama}</td>
-                        <td class="px-4 py-3">${item.shift}</td>
-                        <td class="px-4 py-3">${item.waktu_datang || '-'}</td>
-                        <td class="px-4 py-3">${item.keterlambatan || '-'}</td>
-                        <td class="px-4 py-3">${item.waktu_pulang || '-'}</td>
-                        <td class="px-4 py-3">${item.total_jam_kerja || '-'}</td>
-                        <td class="px-4 py-3"><span class="status-badge ${statusClass}">${item.status}</span></td>
-                        <td class="px-4 py-3">
-                            <button class="edit-btn bg-blue-500 text-white px-3 py-1 rounded text-xs mr-1" data-id="${item.id}">Edit</button>
-                            <button class="delete-btn bg-red-500 text-white px-3 py-1 rounded text-xs" data-id="${item.id}">Hapus</button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            elements.adminTableBody.innerHTML = html;
-            
-            // Add event listeners to buttons
-            document.querySelectorAll('.edit-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const id = e.target.dataset.id;
-                    showEditModal(id);
-                });
-            });
-            
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const id = e.target.dataset.id;
-                    deleteAttendance(id);
-                });
-            });
+            elements.adminTableBody.innerHTML = state.filteredAttendanceData.map(item => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-3">${item.tanggal}</td>
+                    <td class="px-4 py-3">${item.nama}</td>
+                    <td class="px-4 py-3">${item.shift}</td>
+                    <td class="px-4 py-3">${item.waktu_datang || '-'}</td>
+                    <td class="px-4 py-3">${item.keterlambatan || '-'}</td>
+                    <td class="px-4 py-3">${item.waktu_pulang || '-'}</td>
+                    <td class="px-4 py-3">${item.total_jam_kerja || '-'}</td>
+                    <td class="px-4 py-3"><span class="status-badge ${item.status === 'Pulang' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${item.status}</span></td>
+                    <td class="px-4 py-3"><button class="edit-btn text-blue-600 hover:underline text-xs" data-id="${item.id}">Edit</button> <button class="delete-btn text-red-600 hover:underline text-xs" data-id="${item.id}">Hapus</button></td>
+                </tr>
+            `).join('');
+            elements.adminTableBody.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', (e) => showEditModal(e.target.dataset.id)));
+            elements.adminTableBody.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteAttendance(e.target.dataset.id)));
         }
 
-        // Apply admin filters
         function applyAdminFilters() {
             const nama = elements.filterNama.value.trim().toLowerCase();
             const tanggal = elements.filterTanggal.value;
             const shift = elements.filterShift.value;
-            
             state.filteredAttendanceData = state.allAttendanceData.filter(item => {
-                if (nama && !item.nama.toLowerCase().includes(nama)) return false;
-                if (tanggal) {
-                    const itemDate = new Date(item.tanggal.split(' ').reverse().join('-'));
-                    const filterDate = new Date(tanggal);
-                    if (itemDate.toDateString() !== filterDate.toDateString()) return false;
-                }
-                if (shift && item.shift !== shift) return false;
-                return true;
+                return (!nama || item.nama.toLowerCase().includes(nama)) &&
+                       (!tanggal || item.tanggal_iso === tanggal) &&
+                       (!shift || item.shift === shift);
             });
-            
             renderAdminTable();
-            renderCalendar();
+            renderCalendar(); // Perbarui kalender dengan data terfilter
         }
 
-        // Clear admin filters
         function clearAdminFilters() {
             elements.filterNama.value = '';
             elements.filterTanggal.value = '';
@@ -1301,494 +1007,208 @@
             renderCalendar();
         }
 
-        // Switch admin view
         function switchAdminView(view) {
-            elements.tableView.classList.add('hidden');
-            elements.calendarView.classList.add('hidden');
-            elements.statisticsView.classList.add('hidden');
-            
-            elements.viewTable.classList.remove('btn-secondary');
-            elements.viewCalendar.classList.remove('btn-secondary');
-            elements.viewStatistics.classList.remove('btn-secondary');
-            
-            elements.viewTable.classList.add('bg-gray-300', 'text-gray-700');
-            elements.viewCalendar.classList.add('bg-gray-300', 'text-gray-700');
-            elements.viewStatistics.classList.add('bg-gray-300', 'text-gray-700');
-            
-            switch(view) {
-                case 'table':
-                    elements.tableView.classList.remove('hidden');
-                    elements.viewTable.classList.remove('bg-gray-300', 'text-gray-700');
-                    elements.viewTable.classList.add('btn-secondary');
-                    break;
-                case 'calendar':
-                    elements.calendarView.classList.remove('hidden');
-                    elements.viewCalendar.classList.remove('bg-gray-300', 'text-gray-700');
-                    elements.viewCalendar.classList.add('btn-secondary');
-                    renderCalendar();
-                    break;
-                case 'statistics':
-                    elements.statisticsView.classList.remove('hidden');
-                    elements.viewStatistics.classList.remove('bg-gray-300', 'text-gray-700');
-                    elements.viewStatistics.classList.add('btn-secondary');
-                    loadStatistics();
-                    break;
+            ['table', 'calendar', 'statistics'].forEach(v => {
+                elements[`${v}View`].classList.toggle('hidden', v !== view);
+                const viewButton = elements[`view${v.charAt(0).toUpperCase() + v.slice(1)}`];
+                viewButton.classList.toggle('btn-secondary', v === view);
+                viewButton.classList.toggle('bg-gray-300', v !== view);
+                viewButton.classList.toggle('text-gray-700', v !== view);
+            });
+            if (view === 'calendar') renderCalendar();
+            if (view === 'statistics' && state.allAttendanceData.length > 0) {
+                 switchStatsPeriod(state.currentStatsPeriod);
             }
         }
 
-        // Render calendar with color coding for shifts
         function renderCalendar() {
-            const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
-                "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-            
+            const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
             elements.currentMonth.textContent = `${monthNames[state.calendarMonth]} ${state.calendarYear}`;
             
-            // Get first day of month and number of days
             const firstDay = new Date(state.calendarYear, state.calendarMonth, 1);
-            const lastDay = new Date(state.calendarYear, state.calendarMonth + 1, 0);
-            const daysInMonth = lastDay.getDate();
-            const startingDay = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
-            
-            // Create calendar header
-            let html = '';
-            const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-            dayNames.forEach(day => {
-                html += `<div class="text-center font-bold py-2 bg-gray-100">${day}</div>`;
-            });
-            
-            // Add empty cells for days before the first day of the month
+            const daysInMonth = new Date(state.calendarYear, state.calendarMonth + 1, 0).getDate();
+            const startingDay = firstDay.getDay(); // 0 for Sunday, 1 for Monday, etc.
+
+            elements.calendarContainer.innerHTML = ''; // Kosongkan kalender
+
+            // Tambahkan sel kosong untuk hari sebelum tanggal 1
             for (let i = 0; i < startingDay; i++) {
-                html += `<div class="calendar-day bg-gray-50"></div>`;
+                elements.calendarContainer.innerHTML += `<div class="calendar-day bg-gray-50"></div>`;
             }
-            
-            // Add cells for each day of the month
-            const today = new Date();
+
+            // Tambahkan sel untuk setiap hari dalam bulan
             for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(state.calendarYear, state.calendarMonth, day);
-                const dateString = formatDate(date);
-                const isToday = date.toDateString() === today.toDateString();
+                const isToday = date.toDateString() === new Date().toDateString();
                 const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                
-                let dayClass = "calendar-day";
-                if (isToday) dayClass += " today";
-                if (isWeekend) dayClass += " weekend";
-                
-                // Apply background color based on shifts for this day
+                const dateString = `${String(day).padStart(2, '0')}-${String(state.calendarMonth + 1).padStart(2, '0')}-${state.calendarYear}`;
+
+                // Gunakan state.filteredAttendanceData agar filter juga berlaku di kalender
                 const dayEvents = state.filteredAttendanceData.filter(item => {
-                    const itemDate = new Date(item.tanggal.split(' ').reverse().join('-'));
+                    const itemDate = new Date(item.tanggal_iso);
                     return itemDate.toDateString() === date.toDateString();
                 });
-                
-                // Count shifts for background color
-                const pagiCount = dayEvents.filter(e => e.shift === 'Pagi').length;
-                const soreCount = dayEvents.filter(e => e.shift === 'Sore').length;
-                
-                if (pagiCount > 0 && soreCount === 0) {
-                    dayClass += " shift-pagi";
-                } else if (soreCount > 0 && pagiCount === 0) {
-                    dayClass += " shift-sore";
-                } else if (pagiCount > 0 && soreCount > 0) {
-                    // Mixed shifts - gradient background
-                    dayClass += " bg-gradient-to-br from-green-100 to-red-100";
-                }
-                
-                html += `<div class="${dayClass}">`;
-                html += `<div class="font-bold mb-1">${day}</div>`;
-                
-                // Add attendance events for this day
-                dayEvents.forEach(event => {
-                    const eventClass = `calendar-event ${event.shift.toLowerCase()}`;
-                    html += `<div class="${eventClass}" title="${event.nama} - ${event.shift}">${event.nama} (${event.shift})</div>`;
-                });
-                
-                html += `</div>`;
+
+                let dayHtml = `<div class="calendar-day ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}">
+                    <div class="font-bold mb-1">${day}</div>
+                    <div class="space-y-1">
+                        ${dayEvents.map(e => `<div class="calendar-event ${e.shift.toLowerCase()}" title="${e.nama} - ${e.shift}">${e.nama}</div>`).join('')}
+                    </div>
+                </div>`;
+                elements.calendarContainer.innerHTML += dayHtml;
             }
-            
-            elements.calendarContainer.innerHTML = html;
+        }
+        function prevMonth() { state.calendarMonth--; if (state.calendarMonth < 0) { state.calendarMonth = 11; state.calendarYear--; } renderCalendar(); }
+        function nextMonth() { state.calendarMonth++; if (state.calendarMonth > 11) { state.calendarMonth = 0; state.calendarYear++; } renderCalendar(); }
+        
+        async function loadSummaryStatistics() {
+            const result = await fetchData('get_statistics');
+            if (result && result.statistics) {
+                renderStatistics(result.statistics);
+            }
         }
 
-        // Navigate to previous month
-        function prevMonth() {
-            state.calendarMonth--;
-            if (state.calendarMonth < 0) {
-                state.calendarMonth = 11;
-                state.calendarYear--;
-            }
-            renderCalendar();
+        function renderStatistics(stats) {
+            elements.totalAbsensi.textContent = stats.total_absensi_bulan_ini || 0;
+            elements.avgLate.textContent = `${stats.rata_rata_keterlambatan || 0} menit`;
+            elements.totalLate.textContent = `${stats.total_keterlambatan || 0} menit`;
         }
 
-        // Navigate to next month
-        function nextMonth() {
-            state.calendarMonth++;
-            if (state.calendarMonth > 11) {
-                state.calendarMonth = 0;
-                state.calendarYear++;
-            }
-            renderCalendar();
-        }
-
-        // Switch statistics period
-        function switchStatsPeriod(period) {
+        async function switchStatsPeriod(period) {
             state.currentStatsPeriod = period;
+            elements.statsPeriodBtns.forEach(btn => {
+                const isSelected = btn.dataset.period === period;
+                btn.classList.toggle('btn-secondary', isSelected);
+                btn.classList.toggle('bg-gray-300', !isSelected);
+                btn.classList.toggle('text-gray-700', !isSelected);
+            });
             
-            // Update button states
-            elements.statsWeekly.classList.remove('btn-secondary');
-            elements.statsMonthly.classList.remove('btn-secondary');
-            elements.statsYearly.classList.remove('btn-secondary');
-            
-            elements.statsWeekly.classList.add('bg-gray-300', 'text-gray-700');
-            elements.statsMonthly.classList.add('bg-gray-300', 'text-gray-700');
-            elements.statsYearly.classList.add('bg-gray-300', 'text-gray-700');
-            
-            switch(period) {
-                case 'weekly':
-                    elements.statsWeekly.classList.remove('bg-gray-300', 'text-gray-700');
-                    elements.statsWeekly.classList.add('btn-secondary');
-                    loadWeeklyStats();
-                    break;
-                case 'monthly':
-                    elements.statsMonthly.classList.remove('bg-gray-300', 'text-gray-700');
-                    elements.statsMonthly.classList.add('btn-secondary');
-                    loadMonthlyStats();
-                    break;
-                case 'yearly':
-                    elements.statsYearly.classList.remove('bg-gray-300', 'text-gray-700');
-                    elements.statsYearly.classList.add('btn-secondary');
-                    loadYearlyStats();
-                    break;
+            elements.chartsContainer.innerHTML = '<div class="flex justify-center items-center h-48"><div class="loading-spinner"></div><p>Memuat grafik...</p></div>';
+            const result = await fetchData(`get_stats_${period}`);
+
+            if (result && result.stats) {
+                elements.chartsContainer.innerHTML = ''; // Clear loader
+                const renderer = {
+                    weekly: renderWeeklyStats,
+                    monthly: renderMonthlyStats,
+                    yearly: renderYearlyStats
+                };
+                if(renderer[period]) renderer[period](result.stats);
+            } else {
+                 elements.chartsContainer.innerHTML = '<p class="text-center text-red-500">Gagal memuat data grafik.</p>';
             }
         }
 
-        // Load statistics
-        function loadStatistics() {
-            fetch(`${SCRIPT_URL}?action=get_statistics`)
-            .then(response => response.json())
-            .then(result => {
-                if (result.result === 'success') {
-                    renderStatistics(result.statistics);
-                } else {
-                    throw new Error(result.message);
-                }
-            })
-            .catch(error => {
-                showToast(`Error: ${error.message}`, 'error');
-            });
-        }
-
-        // Load weekly statistics
-        function loadWeeklyStats() {
-            fetch(`${SCRIPT_URL}?action=get_weekly_stats`)
-            .then(response => response.json())
-            .then(result => {
-                if (result.result === 'success') {
-                    renderWeeklyStats(result.weekly_stats);
-                } else {
-                    throw new Error(result.message);
-                }
-            })
-            .catch(error => {
-                showToast(`Error: ${error.message}`, 'error');
-            });
-        }
-
-        // Load monthly statistics
-        function loadMonthlyStats() {
-            fetch(`${SCRIPT_URL}?action=get_monthly_stats`)
-            .then(response => response.json())
-            .then(result => {
-                if (result.result === 'success') {
-                    renderMonthlyStats(result.monthly_stats);
-                } else {
-                    throw new Error(result.message);
-                }
-            })
-            .catch(error => {
-                showToast(`Error: ${error.message}`, 'error');
-            });
-        }
-
-        // Load yearly statistics
-        function loadYearlyStats() {
-            fetch(`${SCRIPT_URL}?action=get_yearly_stats`)
-            .then(response => response.json())
-            .then(result => {
-                if (result.result === 'success') {
-                    renderYearlyStats(result.yearly_stats);
-                } else {
-                    throw new Error(result.message);
-                }
-            })
-            .catch(error => {
-                showToast(`Error: ${error.message}`, 'error');
-            });
-        }
-
-        // Render statistics
-        function renderStatistics(statistics) {
-            elements.totalAbsensi.textContent = statistics.total_absensi;
-            elements.avgLate.textContent = statistics.rata_rata_keterlambatan + ' menit';
-            elements.totalLate.textContent = statistics.total_keterlambatan + ' menit';
-        }
-
-        // Render weekly statistics
-        function renderWeeklyStats(weeklyStats) {
-            let html = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div>
-                        <h4 class="font-bold text-lg mb-4">Perbandingan Shift</h4>
-                        <div class="chart-container">
-                            <canvas id="chart-shift-comparison-weekly"></canvas>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-lg mb-4">Absensi per Hari</h4>
-                        <div class="chart-container">
-                            <canvas id="chart-daily-stats-weekly"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 gap-6">
-                    <div>
-                        <h4 class="font-bold text-lg mb-4">Perbandingan Antar Bidan</h4>
-                        <div class="chart-container">
-                            <canvas id="chart-bidan-comparison-weekly"></canvas>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            elements.chartsContainer.innerHTML = html;
-            
-            // Render shift comparison chart
-            const shiftCtx = document.getElementById('chart-shift-comparison-weekly').getContext('2d');
-            if (state.charts.shiftComparisonWeekly) {
-                state.charts.shiftComparisonWeekly.destroy();
-            }
-            
-            state.charts.shiftComparisonWeekly = new Chart(shiftCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Shift Pagi', 'Shift Sore'],
-                    datasets: [{
-                        data: [weeklyStats.shift_comparison.Pagi, weeklyStats.shift_comparison.Sore],
-                        backgroundColor: ['#38a169', '#e53e3e'],
-                        borderColor: ['#2f855a', '#c53030'],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        },
-                        title: {
-                            display: true,
-                            text: 'Distribusi Shift Mingguan'
-                        }
-                    }
-                }
-            });
-            
-            // Render daily stats chart
-            const dailyCtx = document.getElementById('chart-daily-stats-weekly').getContext('2d');
-            if (state.charts.dailyStatsWeekly) {
-                state.charts.dailyStatsWeekly.destroy();
-            }
+        function renderWeeklyStats(stats) {
+            elements.chartsContainer.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="chart-container"><canvas id="chart-daily"></canvas></div>
+                    <div class="chart-container"><canvas id="chart-shift-pie"></canvas></div>
+                </div>`;
             
             const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-            const pagiData = days.map(day => weeklyStats.days[day]?.Pagi || 0);
-            const soreData = days.map(day => weeklyStats.days[day]?.Sore || 0);
+            createChart('chart-daily', 'bar', {
+                labels: days,
+                datasets: [{ 
+                    label: 'Absensi Harian', 
+                    data: days.map(d => stats.daily_attendance[d] || 0), 
+                    backgroundColor: 'rgba(255, 105, 180, 0.7)',
+                    borderColor: 'rgba(255, 105, 180, 1)',
+                    borderWidth: 1
+                }]
+            }, 'Absensi per Hari (Minggu Ini)');
+
+            createChart('chart-shift-pie', 'doughnut', {
+                labels: ['Pagi', 'Sore'],
+                datasets: [{ 
+                    data: [stats.shift_comparison.Pagi || 0, stats.shift_comparison.Sore || 0], 
+                    backgroundColor: ['#87CEEB', '#FF69B4']
+                }]
+            }, 'Perbandingan Shift (Minggu Ini)');
+        }
+        
+        function renderMonthlyStats(stats) {
+            elements.chartsContainer.innerHTML = `
+                <div class="chart-container" style="height: 400px;"><canvas id="chart-user-attendance"></canvas></div>`;
+
+            createChart('chart-user-attendance', 'bar', {
+                labels: Object.keys(stats.user_attendance),
+                datasets: [{
+                    label: 'Total Kehadiran',
+                    data: Object.values(stats.user_attendance),
+                    backgroundColor: '#9370DB'
+                }]
+            }, 'Total Kehadiran per Pengguna (Bulan Ini)', { indexAxis: 'y' });
+        }
+
+        function renderYearlyStats(stats) {
+            elements.chartsContainer.innerHTML = `
+                <div class="chart-container"><canvas id="chart-monthly-attendance"></canvas></div>`;
             
-            state.charts.dailyStatsWeekly = new Chart(dailyCtx, {
-                type: 'bar',
-                data: {
-                    labels: days,
-                    datasets: [
-                        {
-                            label: 'Shift Pagi',
-                            data: pagiData,
-                            backgroundColor: 'rgba(56, 161, 105, 0.7)',
-                            borderColor: 'rgba(56, 161, 105, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Shift Sore',
-                            data: soreData,
-                            backgroundColor: 'rgba(229, 62, 62, 0.7)',
-                            borderColor: 'rgba(229, 62, 62, 1)',
-                            borderWidth: 1
-                        }
-                    ]
+            const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+            createChart('chart-monthly-attendance', 'line', {
+                labels: months,
+                datasets: [{
+                    label: 'Total Absensi',
+                    data: months.map((m, i) => stats.monthly_attendance[i + 1] || 0),
+                    borderColor: '#FF69B4',
+                    backgroundColor: 'rgba(255, 105, 180, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            }, `Total Absensi per Bulan (${state.calendarYear})`);
+        }
+
+        function createChart(canvasId, type, data, titleText, customOptions = {}) {
+            const ctx = document.getElementById(canvasId)?.getContext('2d');
+            if (!ctx) return;
+            if (state.charts[canvasId]) state.charts[canvasId].destroy();
+            
+            const options = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: titleText, font: { size: 16 } },
+                    legend: { position: 'top' }
                 },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Jumlah Absensi'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Hari'
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Render bidan comparison chart
-            const bidanCtx = document.getElementById('chart-bidan-comparison-weekly').getContext('2d');
-            if (state.charts.bidanComparisonWeekly) {
-                state.charts.bidanComparisonWeekly.destroy();
-            }
-            
-            const bidanNames = Object.keys(weeklyStats.nama_comparison);
-            const bidanPagiData = bidanNames.map(nama => weeklyStats.nama_comparison[nama].Pagi);
-            const bidanSoreData = bidanNames.map(nama => weeklyStats.nama_comparison[nama].Sore);
-            
-            state.charts.bidanComparisonWeekly = new Chart(bidanCtx, {
-                type: 'bar',
-                data: {
-                    labels: bidanNames,
-                    datasets: [
-                        {
-                            label: 'Shift Pagi',
-                            data: bidanPagiData,
-                            backgroundColor: 'rgba(56, 161, 105, 0.7)',
-                            borderColor: 'rgba(56, 161, 105, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Shift Sore',
-                            data: bidanSoreData,
-                            backgroundColor: 'rgba(229, 62, 62, 0.7)',
-                            borderColor: 'rgba(229, 62, 62, 1)',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Jumlah Absensi'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Nama Bidan'
-                            }
-                        }
-                    }
-                }
-            });
+                ...customOptions
+            };
+
+            state.charts[canvasId] = new Chart(ctx, { type, data, options });
         }
 
-        // Render monthly statistics
-        function renderMonthlyStats(monthlyStats) {
-            let html = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div>
-                        <h4 class="font-bold text-lg mb-4">Perbandingan Shift Bulanan</h4>
-                        <div class="chart-container">
-                            <canvas id="chart-shift-comparison-monthly"></canvas>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-lg mb-4">Absensi per Minggu</h4>
-                        <div class="chart-container">
-                            <canvas id="chart-weekly-stats-monthly"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 gap-6">
-                    <div>
-                        <h4 class="font-bold text-lg mb-4">Perbandingan Antar Bidan (Bulanan)</h4>
-                        <div class="chart-container">
-                            <canvas id="chart-bidan-comparison-monthly"></canvas>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            elements.chartsContainer.innerHTML = html;
-            
-            // Similar chart rendering for monthly stats
-            // Implementation would follow the same pattern as weekly stats
-        }
-
-        // Render yearly statistics
-        function renderYearlyStats(yearlyStats) {
-            let html = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div>
-                        <h4 class="font-bold text-lg mb-4">Perbandingan Shift Tahunan</h4>
-                        <div class="chart-container">
-                            <canvas id="chart-shift-comparison-yearly"></canvas>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-lg mb-4">Absensi per Bulan</h4>
-                        <div class="chart-container">
-                            <canvas id="chart-monthly-stats-yearly"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 gap-6">
-                    <div>
-                        <h4 class="font-bold text-lg mb-4">Perbandingan Antar Bidan (Tahunan)</h4>
-                        <div class="chart-container">
-                            <canvas id="chart-bidan-comparison-yearly"></canvas>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            elements.chartsContainer.innerHTML = html;
-            
-            // Similar chart rendering for yearly stats
-            // Implementation would follow the same pattern as weekly stats
-        }
-
-        // Show edit modal
         function showEditModal(id) {
-            const item = state.filteredAttendanceData.find(i => i.id === id);
+            const item = state.allAttendanceData.find(i => i.id === id);
             if (!item) return;
-            
-            // Convert tanggal to YYYY-MM-DD format
-            const dateParts = item.tanggal.split(' ');
-            const formattedDate = `${dateParts[2]}-${getMonthNumber(dateParts[1]) + 1}-${dateParts[0]}`;
-            
             elements.editId.value = item.id;
-            elements.editTanggal.value = formattedDate;
+            elements.editTanggal.value = item.tanggal_iso;
             elements.editNama.value = item.nama;
             elements.editShift.value = item.shift;
             elements.editWaktuDatang.value = item.waktu_datang || '';
             elements.editWaktuPulang.value = item.waktu_pulang || '';
             elements.editKeterlambatan.value = item.keterlambatan || '';
             elements.editLembur.value = item.lembur || '';
-            
             elements.editModal.classList.remove('hidden');
         }
 
-        // Hide edit modal
-        function hideEditModal() {
-            elements.editModal.classList.add('hidden');
+        function hideEditModal() { elements.editModal.classList.add('hidden'); }
+
+        function autoCalculateEditFields() {
+            const shift = elements.editShift.value;
+            if (elements.editWaktuDatang.value) {
+                const [h, m] = elements.editWaktuDatang.value.split(':');
+                const checkInTime = new Date(0, 0, 0, h, m);
+                elements.editKeterlambatan.value = calculateKeterlambatan(shift, checkInTime);
+            }
+            if (elements.editWaktuPulang.value) {
+                const [h, m] = elements.editWaktuPulang.value.split(':');
+                const checkOutTime = new Date(0, 0, 0, h, m);
+                elements.editLembur.value = calculateLembur(shift, checkOutTime);
+            }
         }
 
-        // Handle edit form submission
         function handleEditSubmit(e) {
             e.preventDefault();
-            
             const data = {
                 action: 'update_attendance',
                 id: elements.editId.value,
@@ -1801,401 +1221,66 @@
                 lembur: elements.editLembur.value,
                 total_jam_kerja: calculateWorkingHours(elements.editWaktuDatang.value, elements.editWaktuPulang.value)
             };
-            
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.result === 'success') {
-                    showToast('Data berhasil diperbarui!', 'success');
-                    hideEditModal();
-                    loadAllAttendanceData();
-                } else {
-                    throw new Error(result.message);
-                }
-            })
-            .catch(error => {
-                showToast(`Error: ${error.message}`, 'error');
+            sendData(data, e.target.querySelector('button[type="submit"]'), 'Simpan Perubahan', () => {
+                hideEditModal();
+                loadAllAttendanceData();
             });
         }
-
-        // Delete attendance record
+        
         function deleteAttendance(id) {
             if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
-            
-            const data = {
-                action: 'delete_attendance',
-                id: id
-            };
-            
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.result === 'success') {
-                    showToast('Data berhasil dihapus!', 'success');
-                    loadAllAttendanceData();
-                } else {
-                    throw new Error(result.message);
-                }
-            })
-            .catch(error => {
-                showToast(`Error: ${error.message}`, 'error');
-            });
+            sendData({ action: 'delete_attendance', id }, null, null, loadAllAttendanceData);
         }
 
-        // Show fix user data modal
         function showFixUserDataModal() {
-            const namaLama = prompt("Masukkan nama lama:");
+            const namaLama = prompt("Masukkan nama lama yang ingin diperbaiki:");
             if (!namaLama) return;
-            
-            const namaBaru = prompt("Masukkan nama baru:");
+            const namaBaru = prompt(`Masukkan nama baru untuk "${namaLama}":`);
             if (!namaBaru) return;
-            
-            const data = {
-                action: 'fix_user_data',
-                nama_lama: namaLama,
-                nama_baru: namaBaru
-            };
-            
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.result === 'success') {
-                    showToast(`Berhasil memperbaiki ${result.updated} data!`, 'success');
-                    loadAllAttendanceData();
-                } else {
-                    throw new Error(result.message);
-                }
-            })
-            .catch(error => {
-                showToast(`Error: ${error.message}`, 'error');
-            });
+            sendData({ action: 'fix_user_data', nama_lama: namaLama, nama_baru: namaBaru }, null, null, loadAllAttendanceData);
         }
 
-        // Export data to CSV
-        function exportDataToCSV() {
-            const headers = ["Tanggal", "Nama", "Shift", "Waktu Datang", "Keterlambatan", "Waktu Pulang", "Lembur", "Total Jam Kerja", "Status"];
-            let csv = headers.join(",") + "\n";
-            
-            state.filteredAttendanceData.forEach(item => {
-                const row = [
-                    item.tanggal,
-                    item.nama,
-                    item.shift,
-                    item.waktu_datang || '',
-                    item.keterlambatan || '',
-                    item.waktu_pulang || '',
-                    item.lembur || '',
-                    item.total_jam_kerja || '',
-                    item.status
-                ];
-                csv += row.map(field => `"${field}"`).join(",") + "\n";
-            });
-            
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", `absensi_${formatDate(new Date())}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            showToast('Data berhasil diexport!', 'success');
-        }
-
-        // Show PDF export modal
-        function showPdfExportModal() {
-            state.selectedExports.clear();
-            document.querySelectorAll('.export-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            elements.pdfExportModal.classList.remove('hidden');
-        }
-
-        // Hide PDF export modal
-        function hidePdfExportModal() {
-            elements.pdfExportModal.classList.add('hidden');
-        }
-
-        // Toggle export option selection
-        function toggleExportOption(type, element) {
-            if (state.selectedExports.has(type)) {
-                state.selectedExports.delete(type);
-                element.classList.remove('selected');
-            } else {
-                state.selectedExports.add(type);
-                element.classList.add('selected');
-            }
-        }
-
-        // Generate PDF report
-        function generatePdfReport() {
-            if (state.selectedExports.size === 0) {
-                showToast('Pilih setidaknya satu jenis laporan!', 'error');
-                return;
-            }
-
-            showToast('Membuat PDF report...', 'success');
-            
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF();
-            let yPosition = 20;
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            
-            // Add header
-            pdf.setFontSize(20);
-            pdf.setTextColor(40, 40, 40);
-            pdf.text('LAPORAN ABSENSI BIDAN', pageWidth / 2, yPosition, { align: 'center' });
-            yPosition += 10;
-            
-            pdf.setFontSize(12);
-            pdf.setTextColor(100, 100, 100);
-            pdf.text(`Tanggal Generate: ${new Date().toLocaleDateString('id-ID')}`, pageWidth / 2, yPosition, { align: 'center' });
-            yPosition += 20;
-            
-            // Generate selected reports
-            const promises = [];
-            
-            if (state.selectedExports.has('table')) {
-                promises.push(generateTablePDF(pdf, yPosition));
-            }
-            
-            if (state.selectedExports.has('calendar')) {
-                promises.push(generateCalendarPDF(pdf, yPosition));
-            }
-            
-            if (state.selectedExports.has('statistics')) {
-                promises.push(generateStatisticsPDF(pdf, yPosition));
-            }
-            
-            // Wait for all promises to complete
-            Promise.all(promises).then(() => {
-                pdf.save(`laporan_absensi_${formatDateForFilename(new Date())}.pdf`);
-                hidePdfExportModal();
-                showToast('PDF report berhasil di-generate!', 'success');
-            }).catch(error => {
-                console.error('Error generating PDF:', error);
-                showToast('Error generating PDF report', 'error');
-            });
-        }
-
-        // Generate table PDF
-        function generateTablePDF(pdf, startY) {
-            return new Promise((resolve) => {
-                // Add table title
-                pdf.setFontSize(16);
-                pdf.setTextColor(40, 40, 40);
-                pdf.text('DATA TABEL ABSENSI', 20, startY);
-                
-                // Create table data
-                const headers = [['Tanggal', 'Nama', 'Shift', 'Waktu Datang', 'Keterlambatan', 'Waktu Pulang', 'Status']];
-                const tableData = state.filteredAttendanceData.map(item => [
-                    item.tanggal,
-                    item.nama,
-                    item.shift,
-                    item.waktu_datang || '-',
-                    item.keterlambatan || '-',
-                    item.waktu_pulang || '-',
-                    item.status
-                ]);
-                
-                const allData = headers.concat(tableData);
-                
-                // Simple table implementation
-                let y = startY + 10;
-                const colWidths = [30, 35, 20, 25, 30, 25, 25];
-                const xStart = 20;
-                
-                // Draw table headers
-                pdf.setFontSize(10);
-                pdf.setFillColor(240, 240, 240);
-                let x = xStart;
-                
-                headers[0].forEach((header, i) => {
-                    pdf.rect(x, y, colWidths[i], 10, 'F');
-                    pdf.setTextColor(0, 0, 0);
-                    pdf.text(header, x + 2, y + 7);
-                    x += colWidths[i];
-                });
-                
-                y += 10;
-                
-                // Draw table rows
-                tableData.forEach((row, rowIndex) => {
-                    if (y > pageHeight - 20) {
-                        pdf.addPage();
-                        y = 20;
-                    }
-                    
-                    x = xStart;
-                    row.forEach((cell, cellIndex) => {
-                        pdf.setTextColor(0, 0, 0);
-                        pdf.text(cell.substring(0, 15), x + 2, y + 7);
-                        x += colWidths[cellIndex];
-                    });
-                    y += 10;
-                });
-                
-                resolve();
-            });
-        }
-
-        // Generate calendar PDF
-        function generateCalendarPDF(pdf, startY) {
-            return new Promise((resolve) => {
-                // Add calendar title
-                pdf.setFontSize(16);
-                pdf.setTextColor(40, 40, 40);
-                pdf.text('KALENDER ABSENSI', 20, startY);
-                
-                // Simple calendar representation
-                pdf.setFontSize(10);
-                let y = startY + 15;
-                const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
-                    "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-                
-                pdf.text(`Bulan: ${monthNames[state.calendarMonth]} ${state.calendarYear}`, 20, y);
-                y += 10;
-                pdf.text('Total Data: ' + state.filteredAttendanceData.length, 20, y);
-                
-                resolve();
-            });
-        }
-
-        // Generate statistics PDF
-        function generateStatisticsPDF(pdf, startY) {
-            return new Promise((resolve) => {
-                // Add statistics title
-                pdf.setFontSize(16);
-                pdf.setTextColor(40, 40, 40);
-                pdf.text('STATISTIK ABSENSI', 20, startY);
-                
-                // Add summary statistics
-                pdf.setFontSize(12);
-                let y = startY + 15;
-                pdf.text(`Total Absensi: ${state.allAttendanceData.length}`, 20, y);
-                y += 10;
-                pdf.text(`Rata-rata Keterlambatan: ${elements.avgLate.textContent}`, 20, y);
-                y += 10;
-                pdf.text(`Total Keterlambatan: ${elements.totalLate.textContent}`, 20, y);
-                
-                resolve();
-            });
-        }
-
-        // Calculate working hours
         function calculateWorkingHours(startTime, endTime) {
             if (!startTime || !endTime) return '';
-            
-            const [startHours, startMinutes] = startTime.split(':').map(Number);
-            const [endHours, endMinutes] = endTime.split(':').map(Number);
-            
-            let totalMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-            if (totalMinutes < 0) totalMinutes += 24 * 60;
-            
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = totalMinutes % 60;
-            
+            const start = new Date(`1970-01-01T${startTime}`);
+            const end = new Date(`1970-01-01T${endTime}`);
+            let diff = end - start;
+            if (diff < 0) diff += 24 * 60 * 60 * 1000;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             return `${hours} jam ${minutes} menit`;
         }
 
-        // Format date to Indonesian format
-        function formatDate(date) {
-            const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", 
-                           "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-            
-            const dayName = days[date.getDay()];
-            const day = date.getDate();
-            const month = months[date.getMonth()];
-            const year = date.getFullYear();
-            
-            return `${day} ${month} ${year}`;
-        }
-
-        // Format date for filename
-        function formatDateForFilename(date) {
-            const day = date.getDate().toString().padStart(2, '0');
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const year = date.getFullYear();
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            
-            return `${day}-${month}-${year}_${hours}-${minutes}`;
-        }
-
-        // Get month number from name
-        function getMonthNumber(monthName) {
-            const months = {
-                'Januari': 0, 'Februari': 1, 'Maret': 2, 'April': 3,
-                'Mei': 4, 'Juni': 5, 'Juli': 6, 'Agustus': 7,
-                'September': 8, 'Oktober': 9, 'November': 10, 'Desember': 11
-            };
-            return months[monthName] || 0;
-        }
-
-        // Update date and time display
+        function formatDate(date) { return `${date.getDate()} ${date.toLocaleString('id-ID', { month: 'long' })} ${date.getFullYear()}`; }
+        
         function updateDateTime() {
-            const now = new Date();
-            const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", 
-                           "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-            
-            const dayName = days[now.getDay()];
-            const day = now.getDate();
-            const month = months[now.getMonth()];
-            const year = now.getFullYear();
-            const time = now.toLocaleTimeString('id-ID');
-            
-            elements.currentDatetime.textContent = `${dayName}, ${day} ${month} ${year} - ${time}`;
+            elements.currentDatetime.textContent = new Date().toLocaleString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
-
-        // Show toast notification
+        
         function showToast(message, type = 'success') {
             const toast = elements.toast;
             const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+            const colors = {
+                success: 'green',
+                error: 'red',
+                info: 'blue'
+            };
+            const icons = {
+                success: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+                error: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+                info: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`
+            };
             
-            // Set message and color based on type
             toastMessage.textContent = message;
+            toast.className = `fixed top-4 right-4 bg-white p-4 rounded-lg shadow-lg border-l-4 z-50 max-w-sm fade-in border-${colors[type]}-500`;
+            toastIcon.className = `mr-3 text-${colors[type]}-500`;
+            toastIcon.innerHTML = icons[type];
             
-            if (type === 'error') {
-                toast.classList.remove('border-green-500');
-                toast.classList.add('border-red-500');
-            } else {
-                toast.classList.remove('border-red-500');
-                toast.classList.add('border-green-500');
-            }
-            
-            // Show toast
             toast.classList.remove('hidden');
-            
-            // Auto hide after 3 seconds
-            setTimeout(() => {
-                toast.classList.add('hidden');
-            }, 3000);
+            setTimeout(() => { toast.classList.add('hidden'); }, 3000);
         }
 
-        // Initialize the app when DOM is loaded
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
