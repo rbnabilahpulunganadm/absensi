@@ -182,6 +182,12 @@
 </head>
 <body class="antialiased text-gray-800">
 
+    <!-- Elemen audio tersembunyi -->
+    <audio id="backgroundAudio" loop autoplay>
+        <source src="lagu.mp3" type="audio/mpeg">
+        Browser Anda tidak mendukung elemen audio.
+    </audio>
+    
     <!-- Welcome Modal -->
     <div id="welcome-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center kawaii-shadow fade-in">
@@ -532,6 +538,29 @@
         // URL Google Apps Script Anda
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZxc9s1hUgn04AM3OWV4JLEr1l_oHn8VM0L4Cwaqev54gKag31teoWNSFHa3JBB4FKMQ/exec";
 
+        // Eelemen audio tersembunyi
+        // Mengatasi kebijakan autoplay browser
+        document.addEventListener('DOMContentLoaded', function() {
+            const audio = document.getElementById('backgroundAudio');
+            
+            // Coba putar audio
+            const playAudio = () => {
+                audio.play().catch(error => {
+                    console.log('Autoplay diblokir, menunggu interaksi pengguna');
+                });
+            };
+            
+            // Coba putar saat halaman dimuat
+            playAudio();
+            
+            // Coba putar kembali setelah interaksi pengguna
+            document.addEventListener('click', function() {
+                if (audio.paused) {
+                    playAudio();
+                }
+            });
+        });
+        
         // State management untuk aplikasi
         let state = {
             currentUser: null,
