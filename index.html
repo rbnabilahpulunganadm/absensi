@@ -19,8 +19,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
-    <!-- Ikon (Lucide Icons) -->
-    <script src="https://unpkg.com/lucide-react@0.378.0/dist/umd/lucide.min.js"></script>
+    <!-- Ikon (Lucide Icons) - PERBAIKAN DI SINI -->
+    <script src="https://unpkg.com/lucide@0.378.0/dist/umd/lucide.min.js"></script>
 
     <!-- Konfigurasi Tailwind untuk Dark Mode -->
     <script>
@@ -727,8 +727,12 @@
                 applyTheme(savedTheme);
             } else {
                 // Jika tidak ada, gunakan preferensi sistem
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                applyTheme(prefersDark ? 'dark' : 'light');
+                // const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                // applyTheme(prefersDark ? 'dark' : 'light');
+                
+                // PERUBAHAN: Jadikan 'dark' sebagai default jika tidak ada tema tersimpan
+                applyTheme('dark');
+                localStorage.setItem('theme', 'dark'); // Simpan juga defaultnya ke local storage
             }
         }
         
