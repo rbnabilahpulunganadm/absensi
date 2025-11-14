@@ -19,7 +19,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
-    <!-- Ikon (Lucide Icons) - PERBAIKAN DI SINI -->
+    <!-- Ikon (Lucide Icons) -->
     <script src="https://unpkg.com/lucide@0.378.0/dist/umd/lucide.min.js"></script>
 
     <!-- Konfigurasi Tailwind untuk Dark Mode -->
@@ -685,22 +685,36 @@
         // Tambahkan event listener untuk 'ended' (lagu selesai)
         audioPlayer.addEventListener('ended', playNextSong);
 
-        // Fungsi untuk memulai pemutaran (mengatasi kebijakan autoplay browser)
-        function startMusicPlayback() {
+        // --- PERBAIKAN UNTUK AUTOPLAY SAAT REFRESH ---
+
+        // Listener untuk interaksi pertama, akan ditambahkan jika autoplay gagal
+        const playOnFirstInteraction = () => {
+            console.log('Interaksi terdeteksi, mencoba memutar audio...');
+            if (audioPlayer.paused) {
+                audioPlayer.play().catch(e => console.error('Gagal memutar bahkan setelah interaksi', e));
+            }
+            // Hapus listener setelah interaksi pertama
+            document.removeEventListener('click', playOnFirstInteraction);
+            document.removeEventListener('touchstart', playOnFirstInteraction);
+        };
+
+        // Fungsi untuk menambahkan listener interaksi pertama
+        function addFirstInteractionListener() {
+            // Pastikan listener belum ada
+            document.removeEventListener('click', playOnFirstInteraction);
+            document.removeEventListener('touchstart', playOnFirstInteraction);
+            // Tambahkan listener
+            document.addEventListener('click', playOnFirstInteraction);
+            document.addEventListener('touchstart', playOnFirstInteraction);
+        }
+
+        // Fungsi untuk MEMCOBA memulai pemutaran (saat refresh)
+        function tryStartMusic() {
             audioPlayer.src = songList[currentSongIndex];
             audioPlayer.play().catch(error => {
-                console.log('Autoplay diblokir, menunggu interaksi pengguna');
-                // Coba lagi saat pengguna berinteraksi
-                const playOnInteraction = () => {
-                    if (audioPlayer.paused) {
-                        audioPlayer.play().catch(e => console.error('Gagal memutar bahkan setelah interaksi', e));
-                    }
-                    // Hapus listener setelah berhasil
-                    document.removeEventListener('click', playOnInteraction);
-                    document.removeEventListener('touchstart', playOnInteraction);
-                };
-                document.addEventListener('click', playOnInteraction);
-                document.addEventListener('touchstart', playOnInteraction);
+                console.log('Autoplay diblokir, menunggu interaksi pengguna.');
+                // Jika gagal, tambahkan listener untuk interaksi PERTAMA
+                addFirstInteractionListener();
             });
         }
         // --- AKHIR MANAJEMEN PEMUTAR LAGU ---
@@ -861,7 +875,8 @@
                 updateAdminState();
                 
                 // Mulai musik setelah user login
-                startMusicPlayback();
+                // startMusicPlayback(); // Diganti
+                tryStartMusic(); // Gunakan fungsi baru
             }
         }
 
@@ -932,7 +947,11 @@
             updateAdminState();
 
             // Mulai musik saat pengguna masuk
-            startMusicPlayback();
+            // Karena ini SUDAH di dalam event 'click', kita bisa putar langsung
+            if (audioPlayer.paused) {
+                audioPlayer.src = songList[currentSongIndex];
+                audioPlayer.play().catch(e => console.error('Gagal memutar di handleStart', e));
+            }
         }
 
         function handleLogout() {
