@@ -1,57 +1,163 @@
 <!DOCTYPE html>
+<!-- Tambahkan class="dark" di sini jika mode gelap aktif -->
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Absensi Bidan & Terapis - Sistem Lengkap</title>
+    <title>Absensi Bidan & Terapis - Sistem Canggih</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Library untuk Grafik & PDF -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Ikon (Lucide Icons) -->
+    <script src="https://unpkg.com/lucide-react@0.378.0/dist/umd/lucide.min.js"></script>
+
+    <!-- Konfigurasi Tailwind untuk Dark Mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Mengaktifkan mode gelap berdasarkan class 'dark' di <html>
+            theme: {
+                extend: {
+                    colors: {
+                        'pink-primary': '#FF69B4', // HotPink
+                        'pink-secondary': '#FF1493', // DeepPink
+                        'pink-light': '#FFF0F5', // LavenderBlush
+                        'pink-dark': '#C71585', // MediumVioletRed
+                        'admin-primary': '#9370DB', // MediumPurple
+                        'admin-secondary': '#7B68EE', // MediumSlateBlue
+                        'sky-primary': '#87CEEB', // SkyBlue
+                        'sky-secondary': '#00BFFF', // DeepSkyBlue,
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- CSS Kustom untuk Tampilan, Dark Mode, dan Fitur Baru -->
     <style>
         body {
             font-family: 'M PLUS Rounded 1c', sans-serif;
-            background-color: #FFF0F5;
+            background-color: #FFF0F5; /* Latar belakang pink muda */
             background-image: url('https://www.transparenttextures.com/patterns/sakura.png');
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
-        .kawaii-shadow {
-            box-shadow: 0 4px 6px -1px rgba(219, 112, 147, 0.3), 0 2px 4px -2px rgba(219, 112, 147, 0.2);
+
+        /* --- Dark Mode Base --- */
+        html.dark body {
+            background-color: #2a0f2d; /* Latar belakang ungu sangat gelap */
+            color: #e0e0e0; /* Teks putih pudar */
+            background-image: url('https://www.transparenttextures.com/patterns/dark-paths.png');
         }
+
+        html.dark .text-gray-800 { color: #e0e0e0; }
+        html.dark .text-gray-700 { color: #c0c0c0; }
+        html.dark .text-gray-600 { color: #a0a0a0; }
+        
+        /* Kartu & Modal di Dark Mode (Efek Kaca) */
+        html.dark .glass-card {
+            background-color: rgba(40, 20, 45, 0.6); /* Latar belakang kaca ungu gelap transparan */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 105, 180, 0.2); /* Border pink transparan */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        html.dark .glass-modal {
+            background-color: rgba(30, 10, 35, 0.7);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 105, 180, 0.3);
+        }
+
+        /* Tombol di Dark Mode */
+        html.dark .btn-primary { background-color: #FF1493; } /* DeepPink */
+        html.dark .btn-primary:hover { background-color: #FF69B4; } /* HotPink */
+        html.dark .btn-secondary { background-color: #00BFFF; } /* DeepSkyBlue */
+        html.dark .btn-secondary:hover { background-color: #87CEEB; } /* SkyBlue */
+        html.dark .btn-admin { background-color: #7B68EE; } /* MediumSlateBlue */
+        html.dark .btn-admin:hover { background-color: #9370DB; } /* MediumPurple */
+        html.dark .btn-gray { background-color: #4a5568; color: #e2e8f0; }
+        html.dark .btn-gray:hover { background-color: #2d3748; }
+
+        /* Input di Dark Mode */
+        html.dark input, html.dark select {
+            background-color: #3a1c40;
+            border-color: #5a3d60;
+            color: #e0e0e0;
+        }
+        html.dark input::placeholder { color: #7a6d80; }
+        html.dark input:focus, html.dark select:focus {
+            border-color: #FF69B4;
+            box-shadow: 0 0 0 2px rgba(255, 105, 180, 0.4);
+        }
+
+        /* --- Light Mode Styling (Penyempurnaan) --- */
+        .glass-card {
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(219, 112, 147, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(219, 112, 147, 0.2), 0 2px 4px -2px rgba(219, 112, 147, 0.1);
+        }
+
+        .glass-modal {
+            background-color: rgba(255, 240, 245, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(219, 112, 147, 0.3);
+        }
+        
+        /* Tombol Utama (Gradient & Efek Hover) */
         .btn-primary {
-            background-color: #FF69B4;
+            background-image: linear-gradient(to right, #FF69B4, #FF1493);
             color: white;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 10px -2px rgba(255, 20, 147, 0.4);
         }
         .btn-primary:hover {
-            background-color: #FF1493;
             transform: translateY(-2px);
+            box-shadow: 0 6px 12px -2px rgba(255, 20, 147, 0.6);
         }
         .btn-primary:disabled {
+            background-image: none;
             background-color: #f7b8d6;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
+        
         .btn-secondary {
-            background-color: #87CEEB;
+            background-image: linear-gradient(to right, #87CEEB, #00BFFF);
             color: white;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 10px -2px rgba(0, 191, 255, 0.4);
         }
         .btn-secondary:hover {
-            background-color: #00BFFF;
             transform: translateY(-2px);
+            box-shadow: 0 6px 12px -2px rgba(0, 191, 255, 0.6);
         }
+        
         .btn-admin {
-            background-color: #9370DB;
+            background-image: linear-gradient(to right, #9370DB, #7B68EE);
             color: white;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 10px -2px rgba(123, 104, 238, 0.4);
         }
         .btn-admin:hover {
-            background-color: #7B68EE;
             transform: translateY(-2px);
+            box-shadow: 0 6px 12px -2px rgba(123, 104, 238, 0.6);
         }
+
+        .btn-gray { background-color: #e2e8f0; color: #4a5568; }
+        .btn-gray:hover { background-color: #cbd5e1; }
+        
+        /* Tab */
         .tab-active {
             border-bottom: 3px solid #FF69B4;
             color: #FF69B4;
@@ -59,7 +165,22 @@
         }
         .tab-inactive {
             color: #a0aec0;
+            border-bottom: 3px solid transparent;
         }
+        html.dark .tab-inactive { color: #718096; }
+
+        /* Input Fields */
+        input[type="text"], input[type="password"], input[type="date"], input[type="time"], select {
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        input:focus, select:focus {
+            border-color: #FF69B4;
+            box-shadow: 0 0 0 2px rgba(255, 105, 180, 0.4);
+            outline: none;
+        }
+
+        /* Animasi */
         .fade-in {
             animation: fadeIn 0.5s ease-in-out;
         }
@@ -67,25 +188,103 @@
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
         }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
+
+        /* --- Fitur Bantuan (Tooltip) --- */
+        .help-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #cbd5e1;
+            color: #4a5568;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: help;
+            margin-left: 8px;
+            position: relative;
+            user-select: none; /* Mencegah teks terseleksi */
+        }
+        
+        html.dark .help-icon {
+            background-color: #4a5568;
+            color: #e2e8f0;
+        }
+        
+        .help-icon:hover::before, .help-icon:hover::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Konten Tooltip */
+        .help-icon::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 150%; /* Posisikan di atas ikon */
+            left: 50%;
+            transform: translateX(-50%) translateY(5px);
+            background-color: #2d3748;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
             font-size: 12px;
-            font-weight: 500;
-        }
-        .attendance-item {
+            font-weight: 400;
+            width: 200px; /* Lebar tooltip */
+            text-align: center;
+            opacity: 0;
+            visibility: hidden;
             transition: all 0.3s ease;
-            border-left: 4px solid transparent;
+            z-index: 100;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-        .attendance-item:hover {
-            background-color: #f9fafb;
-            border-left-color: #FF69B4;
+        
+        /* Panah Tooltip */
+        .help-icon::after {
+            content: '';
+            position: absolute;
+            bottom: 150%;
+            margin-bottom: -16px; /* Posisikan panah di bawah kotak */
+            left: 50%;
+            transform: translateX(-50%) translateY(5px);
+            border-width: 8px;
+            border-style: solid;
+            border-color: #2d3748 transparent transparent transparent;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 99;
         }
-        .attendance-item.selected {
-            background-color: #f0f9ff;
-            border-left-color: #3b82f6;
+
+        html.dark .help-icon::before { background-color: #e2e8f0; color: #1a202c; }
+        html.dark .help-icon::after { border-top-color: #e2e8f0; }
+
+        /* --- Toggle Dark Mode --- */
+        .theme-toggle {
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 4px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
         }
+        .theme-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        html.dark .theme-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .theme-toggle .sun-icon { display: none; }
+        .theme-toggle .moon-icon { display: block; color: #4a5568; }
+        
+        html.dark .theme-toggle .sun-icon { display: block; color: #f6e05e; }
+        html.dark .theme-toggle .moon-icon { display: none; }
+
+        /* Sisanya (dari file asli) */
         .loading-spinner {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #FF69B4;
@@ -100,135 +299,94 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .calendar-day {
-            border: 1px solid #e2e8f0;
-            min-height: 100px;
-            padding: 8px;
-            position: relative;
-        }
-        .calendar-day.today {
-            background-color: #f0fff4;
-            border-color: #68d391;
-        }
-        .calendar-day.weekend {
-            background-color: #f7fafc;
-        }
-        .calendar-event {
-            background-color: #bee3f8;
-            border-radius: 4px;
-            padding: 2px 4px;
-            margin-bottom: 2px;
-            font-size: 12px;
-            cursor: pointer;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .calendar-event.pagi {
-            background-color: #c6f6d5;
-            border-left: 3px solid #38a169;
-        }
-        .calendar-event.sore {
-            background-color: #fed7d7;
-            border-left: 3px solid #e53e3e;
-        }
+        
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .attendance-item { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .attendance-item:hover { background-color: #f9fafb; border-left-color: #FF69B4; }
+        html.dark .attendance-item:hover { background-color: #3a1c40; border-left-color: #FF69B4; }
+        .attendance-item.selected { background-color: #f0f9ff; border-left-color: #3b82f6; }
+        html.dark .attendance-item.selected { background-color: #3b3a5e; border-left-color: #3b82f6; }
+
+        .calendar-day { border: 1px solid #e2e8f0; min-height: 100px; padding: 8px; position: relative; }
+        html.dark .calendar-day { border-color: #4a5568; }
+        .calendar-day.today { background-color: #f0fff4; border-color: #68d391; }
+        html.dark .calendar-day.today { background-color: #2c5237; border-color: #68d391; }
+        .calendar-day.weekend { background-color: #f7fafc; }
+        html.dark .calendar-day.weekend { background-color: #3a1c40; }
+        
+        .calendar-event { border-radius: 4px; padding: 2px 4px; margin-bottom: 2px; font-size: 12px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .calendar-event.pagi { background-color: #c6f6d5; border-left: 3px solid #38a169; color: #2f855a; }
+        .calendar-event.sore { background-color: #fed7d7; border-left: 3px solid #e53e3e; color: #c53030; }
+        
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #FF69B4 0%, #9370DB 100%);
+            color: white; border-radius: 12px; padding: 20px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
-        .admin-locked {
-            position: relative;
-        }
-        .admin-locked::after {
-            content: "🔒";
-            position: absolute;
-            top: 50%;
-            right: 10px;
-            transform: translateY(-50%);
-            font-size: 14px;
-        }
-        .chart-container {
-            position: relative;
-            height: 350px;
-            width: 100%;
-        }
-        .shift-pagi {
-            background-color: #c6f6d5;
-            border-color: #38a169;
-        }
-        .shift-sore {
-            background-color: #fed7d7;
-            border-color: #e53e3e;
-        }
-        .export-option {
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 16px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .export-option:hover {
-            border-color: #FF69B4;
-            transform: translateY(-2px);
-        }
-        .export-option.selected {
-            border-color: #FF69B4;
-            background-color: #fdf2f8;
-        }
+        
+        .admin-locked::after { content: "🔒"; position: absolute; top: 50%; right: 10px; transform: translateY(-50%); font-size: 14px; }
+        .chart-container { position: relative; height: 350px; width: 100%; }
+        
+        .export-option { border: 2px solid #e2e8f0; border-radius: 8px; padding: 16px; cursor: pointer; transition: all 0.3s ease; }
+        html.dark .export-option { border-color: #4a5568; }
+        .export-option:hover { border-color: #FF69B4; transform: translateY(-2px); }
+        .export-option.selected { border-color: #FF69B4; background-color: #fdf2f8; }
+        html.dark .export-option.selected { background-color: #4a1d40; }
+
     </style>
 </head>
 <body class="antialiased text-gray-800">
 
-    <!-- Elemen audio tersembunyi -->
-    <audio id="backgroundAudio" loop autoplay>
-        <source src="lagu.mp3" type="audio/mpeg">
-        Browser Anda tidak mendukung elemen audio.
-    </audio>
+    <!-- Elemen audio tidak terlihat, akan dikontrol oleh JavaScript -->
+    <!-- <audio id="backgroundAudio" loop autoplay> ... </audio> -->
+    <!-- Dihapus dari HTML, akan dibuat via JS -->
     
     <!-- Welcome Modal -->
-    <div id="welcome-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center kawaii-shadow fade-in">
-            <h2 class="text-3xl font-bold text-pink-500 mb-2">♡ Konnichiwa! ♡</h2>
+    <div id="welcome-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center p-4 z-50">
+        <div class="glass-modal rounded-2xl p-8 max-w-sm w-full text-center fade-in">
+            <h2 class="text-3xl font-bold text-pink-primary mb-2">♡ Konnichiwa! ♡</h2>
             <p class="text-lg text-gray-600 mb-6">Siapa nama kamu? 😊</p>
-            <input type="text" id="name-input" placeholder="Tulis nama/nama panggilan di sini..." class="w-full px-4 py-3 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-400 mb-6 text-center">
-            <button id="start-btn" class="w-full btn-primary font-bold py-3 rounded-lg kawaii-shadow">Masuk</button>
+            <input type="text" id="name-input" placeholder="Tulis nama/panggilan..." class="w-full px-4 py-3 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-primary mb-6 text-center">
+            <button id="start-btn" class="w-full btn-primary font-bold py-3 rounded-lg text-lg">Masuk</button>
         </div>
     </div>
 
     <!-- Admin Login Modal -->
-    <div id="admin-login-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center kawaii-shadow fade-in">
-            <h2 class="text-3xl font-bold text-purple-500 mb-2">🔐 Admin Panel</h2>
+    <div id="admin-login-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-modal rounded-2xl p-8 max-w-sm w-full text-center fade-in">
+            <h2 class="text-3xl font-bold text-admin-primary mb-2">🔐 Admin Panel</h2>
             <p class="text-lg text-gray-600 mb-6">Masukkan password admin</p>
-            <input type="password" id="admin-password" placeholder="Password admin..." class="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:outline-none focus:border-purple-400 mb-6 text-center">
-            <button id="admin-login-submit" class="w-full btn-admin font-bold py-3 rounded-lg kawaii-shadow">Masuk</button>
-            <button id="admin-login-cancel" class="w-full bg-gray-300 text-gray-700 font-bold py-3 rounded-lg kawaii-shadow mt-2">Batal</button>
+            <input type="password" id="admin-password" placeholder="Password admin..." class="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:outline-none focus:border-admin-primary mb-6 text-center">
+            <button id="admin-login-submit" class="w-full btn-admin font-bold py-3 rounded-lg">Masuk</button>
+            <button id="admin-login-cancel" class="w-full btn-gray font-bold py-3 rounded-lg mt-2">Batal</button>
         </div>
     </div>
 
     <!-- Main Content -->
-    <div id="main-content" class="max-w-7xl mx-auto bg-white min-h-screen shadow-lg hidden">
-        <div class="p-6 bg-pink-100" style="background-image: url('https://i.pinimg.com/564x/c2/a7/9a/c2a79a0f4435887803673059811438a3.jpg'); background-size: cover; background-position: center;">
-            <div class="flex justify-between items-center">
+    <div id="main-content" class="max-w-7xl mx-auto min-h-screen hidden">
+        <!-- Header Section -->
+        <div class="p-6 bg-pink-100 dark:bg-transparent glass-card rounded-b-2xl" style="background-image: url('https://i.pinimg.com/564x/c2/a7/9a/c2a79a0f4435887803673059811438a3.jpg'); background-size: cover; background-position: center;">
+            <div class="flex justify-between items-center bg-black/20 dark:bg-black/30 p-4 rounded-xl backdrop-blur-sm">
                 <div>
-                    <h1 class="text-2xl font-bold text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.3);">Absensi Bidan Terapis & Admin</h1>
-                    <div class="text-white mt-1" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.3);">
+                    <h1 class="text-2xl font-bold text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">Absensi Bidan & Terapis</h1>
+                    <div class="text-white mt-1" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
                         <p class="font-medium text-sm" id="display-name">Nabilah Pulungan</p>
                         <p class="text-xs" id="current-datetime">Senin, 1 Januari 2024</p>
                     </div>
                 </div>
-                <div class="text-right">
-                    <button id="user-logout" class="bg-white text-pink-500 px-4 py-2 rounded-lg text-sm font-medium kawaii-shadow">Logout</button>
-                    <button id="admin-access-btn" class="bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium kawaii-shadow mt-2">Admin Access</button>
+                <div class="flex items-center space-x-2">
+                    <!-- Tombol Dark Mode -->
+                    <button id="theme-toggle-btn" class="theme-toggle" data-tooltip="Ubah Tema Gelap/Terang">
+                        <svg id="moon-icon" class="moon-icon w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                        <svg id="sun-icon" class="sun-icon w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                    </button>
+                    <button id="admin-access-btn" class="btn-admin font-medium px-4 py-2 rounded-lg text-sm">Admin Access</button>
+                    <button id="user-logout" class="bg-white text-pink-primary font-medium px-4 py-2 rounded-lg text-sm">Logout</button>
                 </div>
             </div>
         </div>
 
         <!-- Tabs -->
-        <div class="flex border-b">
+        <div class="flex border-b border-gray-200 dark:border-gray-700 mx-6">
             <button id="tab-datang" class="flex-1 py-3 text-center font-medium tab-active">Absen Datang</button>
             <button id="tab-pulang" class="flex-1 py-3 text-center font-medium tab-inactive">Absen Pulang</button>
             <button id="tab-admin" class="flex-1 py-3 text-center font-medium tab-inactive admin-locked">Panel Admin</button>
@@ -236,15 +394,18 @@
 
         <div class="p-6 space-y-6">
             <!-- Universal Shift Selector -->
-            <div class="bg-blue-50 p-4 rounded-lg kawaii-shadow">
-                <h3 class="font-bold text-lg text-blue-800 mb-2">Pilih Shift Kerja Hari Ini</h3>
+            <div class="glass-card p-4 rounded-lg">
+                <h3 class="font-bold text-lg text-blue-800 dark:text-sky-300 mb-2 flex items-center">
+                    Pilih Shift Kerja Hari Ini
+                    <span class="help-icon" data-tooltip="Pilih shift Anda hari ini. Keterlambatan akan dihitung berdasarkan shift yang dipilih.">?</span>
+                </h3>
                 <div class="flex space-x-4">
                     <label class="flex items-center space-x-2">
-                        <input type="radio" name="shift" value="Pagi" class="form-radio text-pink-500" checked>
+                        <input type="radio" name="shift" value="Pagi" class="form-radio text-pink-primary focus:ring-pink-secondary" checked>
                         <span class="text-gray-700">☀️ Pagi (08:00 - 17:00)</span>
                     </label>
                     <label class="flex items-center space-x-2">
-                        <input type="radio" name="shift" value="Sore" class="form-radio text-pink-500">
+                        <input type="radio" name="shift" value="Sore" class="form-radio text-pink-primary focus:ring-pink-secondary">
                         <span class="text-gray-700">🌙 Sore (15:00 - 21:30)</span>
                     </label>
                 </div>
@@ -252,117 +413,112 @@
 
             <!-- Datang Tab Content -->
             <div id="content-datang">
-                <div class="bg-green-50 p-4 rounded-lg kawaii-shadow">
-                    <h3 class="font-bold text-lg text-green-800 mb-2">Lokasi Kamu Saat Ini</h3>
-                    <button id="get-location-btn" class="w-full btn-secondary font-bold py-2 rounded-lg text-sm mb-2 kawaii-shadow">📍 Dapatkan Lokasi</button>
+                <div class="glass-card p-4 rounded-lg">
+                    <h3 class="font-bold text-lg text-green-800 dark:text-green-300 mb-2 flex items-center">
+                        Lokasi Kamu Saat Ini
+                        <span class="help-icon" data-tooltip="Klik tombol untuk mendapatkan koordinat GPS Anda. Anda harus mengizinkan akses lokasi di browser.">?</span>
+                    </h3>
+                    <button id="get-location-btn" class="w-full btn-secondary font-bold py-2 rounded-lg text-sm mb-2">📍 Dapatkan Lokasi</button>
                     <p id="location-display" class="text-center text-gray-600 text-sm h-10">Lokasi akan tampil di sini...</p>
                 </div>
 
-                <button id="absen-datang-btn" class="w-full btn-primary font-bold py-4 rounded-lg kawaii-shadow text-lg mt-4" disabled>Absen Datang & Kirim</button>
+                <button id="absen-datang-btn" class="w-full btn-primary font-bold py-4 rounded-lg text-lg mt-4" disabled>Absen Datang & Kirim</button>
             </div>
 
             <!-- Pulang Tab Content -->
             <div id="content-pulang" class="hidden">
-                <div class="bg-yellow-50 p-4 rounded-lg kawaii-shadow">
-                    <h3 class="font-bold text-lg text-yellow-800 mb-2">Daftar Absen Datang (Belum Pulang)</h3>
+                <div class="glass-card p-4 rounded-lg">
+                    <h3 class="font-bold text-lg text-yellow-800 dark:text-yellow-300 mb-2 flex items-center">
+                        Daftar Absen Datang (Belum Pulang)
+                        <span class="help-icon" data-tooltip="Pilih data absen kedatangan Anda hari ini sebelum menekan tombol 'Absen Pulang'.">?</span>
+                    </h3>
                     <div class="flex items-center mb-2">
-                        <input type="text" id="search-absen" placeholder="Cari berdasarkan nama..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
-                        <button id="refresh-absen-btn" class="ml-2 bg-pink-500 text-white px-4 py-2 rounded-lg kawaii-shadow">Refresh</button>
+                        <input type="text" id="search-absen" placeholder="Cari berdasarkan nama..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-primary">
+                        <button id="refresh-absen-btn" class="ml-2 bg-pink-primary text-white px-4 py-2 rounded-lg">Refresh</button>
                     </div>
                     <div id="absen-list" class="space-y-2 max-h-60 overflow-y-auto p-2">
                         <!-- List absen datang akan ditampilkan di sini -->
                     </div>
                 </div>
 
-                <div class="bg-green-50 p-4 rounded-lg kawaii-shadow mt-4">
-                    <h3 class="font-bold text-lg text-green-800 mb-2">Lokasi Kamu Saat Ini</h3>
-                    <button id="get-location-btn-pulang" class="w-full btn-secondary font-bold py-2 rounded-lg text-sm mb-2 kawaii-shadow">📍 Dapatkan Lokasi</button>
+                <div class="glass-card p-4 rounded-lg mt-4">
+                    <h3 class="font-bold text-lg text-green-800 dark:text-green-300 mb-2">Lokasi Kamu Saat Ini</h3>
+                    <button id="get-location-btn-pulang" class="w-full btn-secondary font-bold py-2 rounded-lg text-sm mb-2">📍 Dapatkan Lokasi</button>
                     <p id="location-display-pulang" class="text-center text-gray-600 text-sm h-10">Lokasi akan tampil di sini...</p>
                 </div>
 
-                <button id="absen-pulang-btn" class="w-full btn-primary font-bold py-4 rounded-lg kawaii-shadow text-lg mt-4" disabled>Absen Pulang & Kirim</button>
+                <button id="absen-pulang-btn" class="w-full btn-primary font-bold py-4 rounded-lg text-lg mt-4" disabled>Absen Pulang & Kirim</button>
             </div>
 
             <!-- Admin Tab Content -->
             <div id="content-admin" class="hidden">
                 <!-- Admin Access Required Message -->
-                <div id="admin-access-required" class="bg-yellow-50 p-8 rounded-lg kawaii-shadow text-center">
+                <div id="admin-access-required" class="glass-card p-8 rounded-lg text-center">
                     <div class="text-5xl mb-4">🔒</div>
-                    <h3 class="text-xl font-bold text-yellow-800 mb-2">Akses Admin Diperlukan</h3>
+                    <h3 class="text-xl font-bold text-yellow-800 dark:text-yellow-300 mb-2">Akses Admin Diperlukan</h3>
                     <p class="text-gray-600 mb-6">Panel admin membutuhkan autentikasi. Silakan login sebagai admin untuk mengakses fitur ini.</p>
-                    <button id="admin-login-from-tab" class="btn-admin font-bold py-3 px-6 rounded-lg kawaii-shadow">Login sebagai Admin</button>
+                    <button id="admin-login-from-tab" class="btn-admin font-bold py-3 px-6 rounded-lg">Login sebagai Admin</button>
                 </div>
 
                 <!-- Admin Content (akan ditampilkan setelah login) -->
-                <div id="admin-content" class="hidden">
+                <div id="admin-content" class="hidden space-y-6">
                     <!-- Admin Controls -->
-                    <div class="bg-purple-50 p-4 rounded-lg kawaii-shadow mb-6">
-                        <h3 class="font-bold text-lg text-purple-800 mb-4">Kontrol Admin</h3>
+                    <div class="glass-card p-4 rounded-lg">
+                        <h3 class="font-bold text-lg text-admin-primary mb-4 flex items-center">
+                            Kontrol Admin
+                            <span class="help-icon" data-tooltip="Alat cepat untuk admin: Refresh mengambil data terbaru, Export untuk CSV (segera), Perbaiki Data untuk mengganti nama user, Generate PDF (segera).">?</span>
+                        </h3>
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <button id="refresh-admin-data" class="btn-admin py-2 rounded-lg kawaii-shadow">Refresh Data</button>
-                            <button id="export-data" class="btn-secondary py-2 rounded-lg kawaii-shadow">Export Data</button>
-                            <button id="fix-user-data" class="bg-yellow-500 text-white py-2 rounded-lg kawaii-shadow">Perbaiki Data User</button>
-                            <button id="generate-pdf" class="bg-red-500 text-white py-2 rounded-lg kawaii-shadow">Generate PDF Report</button>
+                            <button id="refresh-admin-data" class="btn-admin py-2 rounded-lg">Refresh Data</button>
+                            <button id="export-data" class="btn-secondary py-2 rounded-lg">Export Data</button>
+                            <button id="fix-user-data" class="bg-yellow-500 text-white py-2 rounded-lg">Perbaiki Data User</button>
+                            <button id="generate-pdf" class="bg-red-500 text-white py-2 rounded-lg">Generate PDF Report</button>
                         </div>
                     </div>
 
-                    <!-- PDF Export Modal -->
-                    <div id="pdf-export-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-                        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full kawaii-shadow fade-in">
-                            <h2 class="text-2xl font-bold text-pink-500 mb-4">Export Laporan PDF</h2>
+                    <!-- PDF Export Modal (Desain baru) -->
+                    <div id="pdf-export-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center p-4 z-50 hidden">
+                        <div class="glass-modal rounded-2xl p-8 max-w-2xl w-full fade-in">
+                            <h2 class="text-2xl font-bold text-pink-primary mb-4">Export Laporan PDF</h2>
                             <div class="space-y-4 mb-6">
                                 <p class="text-gray-600">Pilih jenis laporan yang ingin diexport:</p>
-                                
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div class="export-option" data-type="table">
-                                        <div class="text-center">
-                                            <div class="text-3xl mb-2">📊</div>
-                                            <h4 class="font-bold text-gray-800">Data Tabel</h4>
-                                            <p class="text-sm text-gray-600 mt-1">Data absensi dalam format tabel</p>
-                                        </div>
+                                        <div class="text-center"><div class="text-3xl mb-2">📊</div><h4 class="font-bold text-gray-800">Data Tabel</h4><p class="text-sm text-gray-600 mt-1">Data absensi format tabel</p></div>
                                     </div>
                                     <div class="export-option" data-type="calendar">
-                                        <div class="text-center">
-                                            <div class="text-3xl mb-2">📅</div>
-                                            <h4 class="font-bold text-gray-800">Kalender</h4>
-                                            <p class="text-sm text-gray-600 mt-1">Tampilan kalender absensi</p>
-                                        </div>
+                                        <div class="text-center"><div class="text-3xl mb-2">📅</div><h4 class="font-bold text-gray-800">Kalender</h4><p class="text-sm text-gray-600 mt-1">Tampilan kalender absensi</p></div>
                                     </div>
                                     <div class="export-option" data-type="statistics">
-                                        <div class="text-center">
-                                            <div class="text-3xl mb-2">📈</div>
-                                            <h4 class="font-bold text-gray-800">Statistik</h4>
-                                            <p class="text-sm text-gray-600 mt-1">Grafik dan statistik lengkap</p>
-                                        </div>
+                                        <div class="text-center"><div class="text-3xl mb-2">📈</div><h4 class="font-bold text-gray-800">Statistik</h4><p class="text-sm text-gray-600 mt-1">Grafik dan statistik</p></div>
                                     </div>
                                 </div>
-                                
-                                <div class="bg-blue-50 p-4 rounded-lg mt-4">
-                                    <p class="text-sm text-blue-800"><strong>Tip:</strong> Anda bisa memilih satu, dua, atau ketiga jenis laporan sekaligus!</p>
+                                <div class="bg-blue-50 dark:bg-sky-900 p-4 rounded-lg mt-4">
+                                    <p class="text-sm text-blue-800 dark:text-sky-200"><strong>Tip:</strong> Anda bisa memilih satu, dua, atau ketiga jenis laporan sekaligus!</p>
                                 </div>
                             </div>
                             <div class="flex space-x-4">
-                                <button id="generate-pdf-btn" class="flex-1 bg-red-500 text-white py-3 rounded-lg kawaii-shadow">Generate PDF</button>
-                                <button id="cancel-pdf-export" class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg kawaii-shadow">Batal</button>
+                                <button id="generate-pdf-btn" class="flex-1 bg-red-500 text-white py-3 rounded-lg">Generate PDF</button>
+                                <button id="cancel-pdf-export" class="flex-1 btn-gray py-3 rounded-lg">Batal</button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Filters -->
-                    <div class="bg-white p-4 rounded-lg kawaii-shadow border border-gray-200 mb-6">
+                    <div class="glass-card p-4 rounded-lg">
                         <h3 class="font-bold text-lg text-gray-800 mb-4">Filter Data</h3>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nama</label>
-                                <input type="text" id="filter-nama" placeholder="Semua nama" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                                <input type="text" id="filter-nama" placeholder="Semua nama" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-                                <input type="date" id="filter-tanggal" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                                <input type="date" id="filter-tanggal" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Shift</label>
-                                <select id="filter-shift" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                                <select id="filter-shift" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                                     <option value="">Semua Shift</option>
                                     <option value="Pagi">Pagi</option>
                                     <option value="Sore">Sore</option>
@@ -370,27 +526,27 @@
                             </div>
                         </div>
                         <div class="mt-4 flex space-x-4">
-                            <button id="apply-filters" class="btn-primary px-4 py-2 rounded-lg kawaii-shadow">Terapkan Filter</button>
-                            <button id="clear-filters" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg kawaii-shadow">Hapus Filter</button>
+                            <button id="apply-filters" class="btn-primary px-4 py-2 rounded-lg">Terapkan Filter</button>
+                            <button id="clear-filters" class="btn-gray px-4 py-2 rounded-lg">Hapus Filter</button>
                         </div>
                     </div>
 
                     <!-- View Options -->
-                    <div class="bg-white p-4 rounded-lg kawaii-shadow border border-gray-200 mb-6">
+                    <div class="glass-card p-4 rounded-lg">
                         <h3 class="font-bold text-lg text-gray-800 mb-4">Tampilan Data</h3>
                         <div class="flex space-x-4">
-                            <button id="view-table" class="btn-secondary px-4 py-2 rounded-lg kawaii-shadow">Tabel</button>
-                            <button id="view-calendar" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg kawaii-shadow">Kalender</button>
-                            <button id="view-statistics" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg kawaii-shadow">Statistik</button>
+                            <button id="view-table" class="btn-secondary px-4 py-2 rounded-lg">Tabel</button>
+                            <button id="view-calendar" class="btn-gray px-4 py-2 rounded-lg">Kalender</button>
+                            <button id="view-statistics" class="btn-gray px-4 py-2 rounded-lg">Statistik</button>
                         </div>
                     </div>
 
                     <!-- Table View -->
-                    <div id="table-view" class="bg-white p-4 rounded-lg kawaii-shadow border border-gray-200 mb-6">
+                    <div id="table-view" class="glass-card p-4 rounded-lg">
                         <h3 class="font-bold text-lg text-gray-800 mb-4">Data Absensi</h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left text-gray-700">
-                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                     <tr>
                                         <th class="px-4 py-3">Tanggal</th>
                                         <th class="px-4 py-3">Nama</th>
@@ -411,106 +567,72 @@
                     </div>
 
                     <!-- Calendar View -->
-                    <div id="calendar-view" class="bg-white p-4 rounded-lg kawaii-shadow border border-gray-200 mb-6 hidden">
+                    <div id="calendar-view" class="glass-card p-4 rounded-lg hidden">
                         <h3 class="font-bold text-lg text-gray-800 mb-4">Kalender Absensi</h3>
                         <div class="flex justify-between items-center mb-4">
-                            <button id="prev-month" class="btn-secondary px-4 py-2 rounded-lg kawaii-shadow">← Bulan Sebelumnya</button>
+                            <button id="prev-month" class="btn-secondary px-4 py-2 rounded-lg">← Bulan Lalu</button>
                             <h4 id="current-month" class="text-lg font-bold">Januari 2024</h4>
-                            <button id="next-month" class="btn-secondary px-4 py-2 rounded-lg kawaii-shadow">Bulan Selanjutnya →</button>
+                            <button id="next-month" class="btn-secondary px-4 py-2 rounded-lg">Bulan Depan →</button>
                         </div>
-                        
-                        <div class="grid grid-cols-7 text-center font-bold py-2 bg-gray-100 text-sm">
-                            <div>Min</div>
-                            <div>Sen</div>
-                            <div>Sel</div>
-                            <div>Rab</div>
-                            <div>Kam</div>
-                            <div>Jum</div>
-                            <div>Sab</div>
+                        <div class="grid grid-cols-7 text-center font-bold py-2 bg-gray-100 dark:bg-gray-700 text-sm rounded-t-lg">
+                            <div>Min</div> <div>Sen</div> <div>Sel</div> <div>Rab</div> <div>Kam</div> <div>Jum</div> <div>Sab</div>
                         </div>
-                        <div id="calendar-container" class="grid grid-cols-7 gap-1">
+                        <div id="calendar-container" class="grid grid-cols-7 gap-1 bg-white dark:bg-transparent rounded-b-lg">
                             <!-- Kalender akan diisi oleh JavaScript -->
                         </div>
                     </div>
 
                     <!-- Statistics View -->
-                    <div id="statistics-view" class="bg-white p-4 rounded-lg kawaii-shadow border border-gray-200 mb-6 hidden">
+                    <div id="statistics-view" class="glass-card p-4 rounded-lg hidden">
                         <h3 class="font-bold text-lg text-gray-800 mb-4">Statistik Absensi</h3>
-                        
-                        <!-- Period Selector -->
-                        <div class="bg-blue-50 p-4 rounded-lg mb-6">
-                            <h4 class="font-bold text-blue-800 mb-2">Pilih Periode Statistik</h4>
+                        <div class="bg-blue-50 dark:bg-sky-900 p-4 rounded-lg mb-6">
+                            <h4 class="font-bold text-blue-800 dark:text-sky-300 mb-2">Pilih Periode Statistik</h4>
                             <div class="flex space-x-4">
-                                <button data-period="weekly" class="stats-period-btn btn-secondary px-4 py-2 rounded-lg kawaii-shadow">Mingguan</button>
-                                <button data-period="monthly" class="stats-period-btn bg-gray-300 text-gray-700 px-4 py-2 rounded-lg kawaii-shadow">Bulanan</button>
-                                <button data-period="yearly" class="stats-period-btn bg-gray-300 text-gray-700 px-4 py-2 rounded-lg kawaii-shadow">Tahunan</button>
+                                <button data-period="weekly" class="stats-period-btn btn-secondary px-4 py-2 rounded-lg">Mingguan</button>
+                                <button data-period="monthly" class="stats-period-btn btn-gray px-4 py-2 rounded-lg">Bulanan</button>
+                                <button data-period="yearly" class="stats-period-btn btn-gray px-4 py-2 rounded-lg">Tahunan</button>
                             </div>
                         </div>
-
-                        <!-- Summary Cards -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <div class="stat-card">
-                                <h4 class="text-lg font-bold mb-2">Total Absensi Bulan Ini</h4>
-                                <p id="total-absensi" class="text-3xl font-bold">0</p>
-                            </div>
-                            <div class="stat-card">
-                                <h4 class="text-lg font-bold mb-2">Rata-rata Keterlambatan</h4>
-                                <p id="avg-late" class="text-3xl font-bold">0 menit</p>
-                            </div>
-                            <div class="stat-card">
-                                <h4 class="text-lg font-bold mb-2">Total Keterlambatan</h4>
-                                <p id="total-late" class="text-3xl font-bold">0 menit</p>
-                            </div>
+                            <div class="stat-card"><h4 class="text-lg font-bold mb-2">Total Absensi (Bulan)</h4><p id="total-absensi" class="text-3xl font-bold">0</p></div>
+                            <div class="stat-card"><h4 class="text-lg font-bold mb-2">Rata-rata Keterlambatan</h4><p id="avg-late" class="text-3xl font-bold">0 mnt</p></div>
+                            <div class="stat-card"><h4 class="text-lg font-bold mb-2">Total Keterlambatan</h4><p id="total-late" class="text-3xl font-bold">0 mnt</p></div>
                         </div>
-
-                        <!-- Charts Container -->
                         <div id="charts-container" class="mt-6">
                              <!-- Grafik akan dimuat di sini -->
                         </div>
                     </div>
 
                     <!-- Edit Modal -->
-                    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-                        <div class="bg-white rounded-2xl p-8 max-w-md w-full kawaii-shadow fade-in">
-                            <h2 class="text-2xl font-bold text-pink-500 mb-4">Edit Data Absensi</h2>
+                    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center p-4 z-50 hidden">
+                        <div class="glass-modal rounded-2xl p-8 max-w-md w-full fade-in">
+                            <h2 class="text-2xl font-bold text-pink-primary mb-4">Edit Data Absensi</h2>
                             <form id="edit-form" class="space-y-4">
                                 <input type="hidden" id="edit-id">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-                                    <input type="date" id="edit-tanggal" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                                    <input type="date" id="edit-tanggal" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama</label>
-                                    <input type="text" id="edit-nama" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" readonly>
+                                    <input type="text" id="edit-nama" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 dark:bg-gray-700" readonly>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Shift</label>
-                                    <select id="edit-shift" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                                    <select id="edit-shift" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                                         <option value="Pagi">Pagi</option>
                                         <option value="Sore">Sore</option>
                                     </select>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Datang</label>
-                                        <input type="time" id="edit-waktu-datang" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" step="1">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Pulang</label>
-                                        <input type="time" id="edit-waktu-pulang" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" step="1">
-                                    </div>
+                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Waktu Datang</label><input type="time" id="edit-waktu-datang" class="w-full px-3 py-2 border border-gray-300 rounded-lg" step="1"></div>
+                                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Waktu Pulang</label><input type="time" id="edit-waktu-pulang" class="w-full px-3 py-2 border border-gray-300 rounded-lg" step="1"></div>
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Keterlambatan (Otomatis/Manual)</label>
-                                    <input type="text" id="edit-keterlambatan" placeholder="Contoh: 5 menit" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Lembur (Otomatis/Manual)</label>
-                                    <input type="text" id="edit-lembur" placeholder="Contoh: 30 menit" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
-                                </div>
+                                <div><label class="block text-sm font-medium text-gray-700 mb-1">Keterlambatan</label><input type="text" id="edit-keterlambatan" placeholder="Otomatis/Manual" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
+                                <div><label class="block text-sm font-medium text-gray-700 mb-1">Lembur</label><input type="text" id="edit-lembur" placeholder="Otomatis/Manual" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
                                 <div class="flex space-x-4 mt-6">
-                                    <button type="submit" class="flex-1 btn-primary py-3 rounded-lg kawaii-shadow">Simpan Perubahan</button>
-                                    <button type="button" id="cancel-edit" class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg kawaii-shadow">Batal</button>
+                                    <button type="submit" class="flex-1 btn-primary py-3 rounded-lg">Simpan</button>
+                                    <button type="button" id="cancel-edit" class="flex-1 btn-gray py-3 rounded-lg">Batal</button>
                                 </div>
                             </form>
                         </div>
@@ -521,15 +643,13 @@
     </div>
 
     <!-- Notification Toast -->
-    <div id="toast" class="fixed top-4 right-4 bg-white p-4 rounded-lg shadow-lg border-l-4 border-green-500 hidden z-50 max-w-sm fade-in">
+    <div id="toast" class="fixed top-4 right-4 p-4 rounded-lg shadow-lg border-l-4 hidden z-50 max-w-sm fade-in glass-card">
         <div class="flex items-center">
-            <div id="toast-icon" class="mr-3 text-green-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+            <div id="toast-icon" class="mr-3">
+                <!-- Ikon akan diisi oleh JS -->
             </div>
             <div>
-                <p id="toast-message" class="text-gray-800 font-medium">Pesan notifikasi</p>
+                <p id="toast-message" class="font-medium">Pesan notifikasi</p>
             </div>
         </div>
     </div>
@@ -538,29 +658,90 @@
         // URL Google Apps Script Anda
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZxc9s1hUgn04AM3OWV4JLEr1l_oHn8VM0L4Cwaqev54gKag31teoWNSFHa3JBB4FKMQ/exec";
 
-        // Eelemen audio tersembunyi
-        // Mengatasi kebijakan autoplay browser
-        document.addEventListener('DOMContentLoaded', function() {
-            const audio = document.getElementById('backgroundAudio');
-            
-            // Coba putar audio
-            const playAudio = () => {
-                audio.play().catch(error => {
-                    console.log('Autoplay diblokir, menunggu interaksi pengguna');
-                });
-            };
-            
-            // Coba putar saat halaman dimuat
-            playAudio();
-            
-            // Coba putar kembali setelah interaksi pengguna
-            document.addEventListener('click', function() {
-                if (audio.paused) {
-                    playAudio();
-                }
+        // --- MANAJEMEN PEMUTAR LAGU ---
+        const songList = [
+            'lagu1.mp3', 'lagu2.mp3', 'lagu3.mp3', 'lagu4.mp3', 'lagu5.mp3',
+            'lagu6.mp3', 'lagu7.mp3', 'lagu8.mp3', 'lagu9.mp3', 'lagu10.mp3'
+        ];
+        // Pilih lagu awal secara acak
+        let currentSongIndex = Math.floor(Math.random() * songList.length);
+        const audioPlayer = new Audio();
+        audioPlayer.loop = false; // Kita akan menangani loop secara manual
+
+        function playNextSong() {
+            // Pindah ke lagu berikutnya
+            currentSongIndex++;
+            // Jika sudah di akhir daftar, kembali ke awal
+            if (currentSongIndex >= songList.length) {
+                currentSongIndex = 0;
+            }
+            // Set sumber lagu baru dan putar
+            audioPlayer.src = songList[currentSongIndex];
+            audioPlayer.play().catch(error => {
+                console.warn('Gagal memutar lagu berikutnya secara otomatis:', error.message);
             });
-        });
+        }
         
+        // Tambahkan event listener untuk 'ended' (lagu selesai)
+        audioPlayer.addEventListener('ended', playNextSong);
+
+        // Fungsi untuk memulai pemutaran (mengatasi kebijakan autoplay browser)
+        function startMusicPlayback() {
+            audioPlayer.src = songList[currentSongIndex];
+            audioPlayer.play().catch(error => {
+                console.log('Autoplay diblokir, menunggu interaksi pengguna');
+                // Coba lagi saat pengguna berinteraksi
+                const playOnInteraction = () => {
+                    if (audioPlayer.paused) {
+                        audioPlayer.play().catch(e => console.error('Gagal memutar bahkan setelah interaksi', e));
+                    }
+                    // Hapus listener setelah berhasil
+                    document.removeEventListener('click', playOnInteraction);
+                    document.removeEventListener('touchstart', playOnInteraction);
+                };
+                document.addEventListener('click', playOnInteraction);
+                document.addEventListener('touchstart', playOnInteraction);
+            });
+        }
+        // --- AKHIR MANAJEMEN PEMUTAR LAGU ---
+
+
+        // --- MANAJEMEN DARK MODE ---
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        const sunIcon = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
+
+        // Fungsi untuk menerapkan tema
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        // Cek tema yang tersimpan saat memuat halaman
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else {
+                // Jika tidak ada, gunakan preferensi sistem
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                applyTheme(prefersDark ? 'dark' : 'light');
+            }
+        }
+        
+        // Event listener untuk tombol toggle
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            const newTheme = isDark ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
+        // --- AKHIR MANAJEMEN DARK MODE ---
+
+
         // State management untuk aplikasi
         let state = {
             currentUser: null,
@@ -577,8 +758,9 @@
             selectedExports: new Set()
         };
 
-        // Cache elemen DOM untuk performa
+        // Cache elemen DOM (sebagian besar sama, tambahkan tombol tema)
         const elements = {
+            themeToggleBtn: document.getElementById('theme-toggle-btn'), // Baru
             welcomeModal: document.getElementById('welcome-modal'),
             adminLoginModal: document.getElementById('admin-login-modal'),
             mainContent: document.getElementById('main-content'),
@@ -652,9 +834,18 @@
         };
 
         function init() {
+            // Muat tema (gelap/terang) SECEPAT MUNGKIN
+            loadTheme();
+            
+            // Lanjutkan setup
             setupEventListeners();
             updateDateTime();
             setInterval(updateDateTime, 1000);
+            
+            // Ikon Lucide
+            lucide.createIcons(); 
+
+            // Cek user yang tersimpan
             const storedUser = localStorage.getItem('currentUser');
             const storedAdmin = localStorage.getItem('isAdmin') === 'true';
             if (storedUser) {
@@ -664,9 +855,13 @@
                 elements.mainContent.classList.remove('hidden');
                 elements.displayName.textContent = storedUser;
                 updateAdminState();
+                
+                // Mulai musik setelah user login
+                startMusicPlayback();
             }
         }
 
+        // Event listener (sebagian besar sama)
         function setupEventListeners() {
             elements.startBtn.addEventListener('click', handleStart);
             elements.nameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleStart(); });
@@ -688,7 +883,19 @@
             elements.refreshAdminData.addEventListener('click', loadAllAttendanceData);
             elements.exportData.addEventListener('click', () => showToast('Fitur export CSV akan segera hadir!', 'info'));
             elements.fixUserData.addEventListener('click', showFixUserDataModal);
-            elements.generatePdf.addEventListener('click', () => showToast('Fitur export PDF akan segera hadir!', 'info'));
+            
+            // PDF Export Listeners
+            elements.generatePdf.addEventListener('click', showPdfExportModal);
+            elements.cancelPdfExport.addEventListener('click', hidePdfExportModal);
+            document.querySelectorAll('.export-option').forEach(opt => {
+                opt.addEventListener('click', () => {
+                    opt.classList.toggle('selected');
+                    const type = opt.dataset.type;
+                    state.selectedExports.has(type) ? state.selectedExports.delete(type) : state.selectedExports.add(type);
+                });
+            });
+            elements.generatePdfBtn.addEventListener('click', handleGeneratePdf);
+
             elements.applyFilters.addEventListener('click', applyAdminFilters);
             elements.clearFilters.addEventListener('click', clearAdminFilters);
             elements.viewTable.addEventListener('click', () => switchAdminView('table'));
@@ -719,6 +926,9 @@
             elements.mainContent.classList.remove('hidden');
             showToast(`Selamat datang, ${name}!`, 'success');
             updateAdminState();
+
+            // Mulai musik saat pengguna masuk
+            startMusicPlayback();
         }
 
         function handleLogout() {
@@ -730,6 +940,9 @@
             elements.welcomeModal.classList.remove('hidden');
             elements.nameInput.value = '';
             showToast('Berhasil logout!', 'success');
+            
+            // Hentikan musik saat logout
+            audioPlayer.pause();
         }
 
         function showAdminLogin() { elements.adminLoginModal.classList.remove('hidden'); }
@@ -737,6 +950,102 @@
             elements.adminLoginModal.classList.add('hidden');
             elements.adminPassword.value = '';
         }
+        
+        function showPdfExportModal() { 
+            state.selectedExports.clear();
+            document.querySelectorAll('.export-option').forEach(opt => opt.classList.remove('selected'));
+            elements.pdfExportModal.classList.remove('hidden'); 
+        }
+        function hidePdfExportModal() { elements.pdfExportModal.classList.add('hidden'); }
+
+        async function handleGeneratePdf() {
+            if (state.selectedExports.size === 0) {
+                showToast('Pilih minimal satu jenis laporan!', 'error');
+                return;
+            }
+            
+            hidePdfExportModal();
+            showToast('Memulai generate PDF... Ini mungkin perlu waktu.', 'info');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            let yPos = 10; // Posisi Y awal
+
+            const addPageHeader = (title) => {
+                doc.setFontSize(18);
+                doc.setTextColor(40);
+                doc.text(title, 105, yPos, { align: 'center' });
+                yPos += 10;
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(`Laporan Dibuat: ${new Date().toLocaleString('id-ID')}`, 105, yPos, { align: 'center' });
+                yPos += 10;
+            };
+
+            const addNewPage = (title) => {
+                doc.addPage();
+                yPos = 10;
+                addPageHeader(title);
+            };
+
+            // Loop melalui jenis ekspor yang dipilih
+            const selectedArray = Array.from(state.selectedExports);
+            
+            for (let i = 0; i < selectedArray.length; i++) {
+                const type = selectedArray[i];
+                if (i > 0) addNewPage(getExportTitle(type));
+                else addPageHeader(getExportTitle(type));
+
+                try {
+                    // Gunakan html2canvas untuk menangkap elemen
+                    let elementToCapture;
+                    if (type === 'table') elementToCapture = elements.tableView;
+                    if (type === 'calendar') elementToCapture = elements.calendarView;
+                    if (type === 'statistics') elementToCapture = elements.statisticsView;
+
+                    // Tampilkan elemen sementara jika tersembunyi
+                    const wasHidden = elementToCapture.classList.contains('hidden');
+                    if (wasHidden) elementToCapture.classList.remove('hidden');
+
+                    const canvas = await html2canvas(elementToCapture, { 
+                        scale: 2, // Resolusi lebih tinggi
+                        useCORS: true 
+                    });
+                    
+                    if (wasHidden) elementToCapture.classList.add('hidden');
+
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgProps = doc.getImageProperties(imgData);
+                    const pdfWidth = doc.internal.pageSize.getWidth() - 20; // A4 width - margin
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    
+                    if (yPos + pdfHeight > doc.internal.pageSize.getHeight() - 20) {
+                         addNewPage(getExportTitle(type));
+                    }
+                    
+                    doc.addImage(imgData, 'PNG', 10, yPos, pdfWidth, pdfHeight);
+                    yPos += pdfHeight + 10;
+                    
+                } catch (err) {
+                    console.error('Error generating PDF part:', err);
+                    showToast(`Gagal membuat bagian ${type}`, 'error');
+                }
+            }
+            
+            doc.save(`laporan-absensi-${formatDate(new Date())}.pdf`);
+            showToast('PDF berhasil dibuat!', 'success');
+        }
+        
+        function getExportTitle(type) {
+            if (type === 'table') return 'Laporan Data Tabel Absensi';
+            if (type === 'calendar') return 'Laporan Kalender Absensi';
+            if (type === 'statistics') return 'Laporan Statistik Absensi';
+            return 'Laporan Absensi';
+        }
+
+        // Sisa fungsi (handleAdminLogin, updateAdminState, switchTab, dll.)
+        // sebagian besar tetap sama, tidak perlu diubah.
+        // ... (Fungsi-fungsi dari file asli disalin di sini) ...
 
         function handleAdminLogin() {
             const password = elements.adminPassword.value.trim();
@@ -758,8 +1067,9 @@
             const isAdmin = state.isAdmin;
             elements.tabAdmin.classList.toggle('admin-locked', !isAdmin);
             elements.adminAccessBtn.textContent = isAdmin ? 'Admin Mode' : 'Admin Access';
-            elements.adminAccessBtn.classList.toggle('bg-purple-500', !isAdmin);
+            elements.adminAccessBtn.classList.toggle('btn-admin', !isAdmin);
             elements.adminAccessBtn.classList.toggle('bg-green-500', isAdmin);
+            elements.adminAccessBtn.classList.toggle('hover:bg-green-600', isAdmin);
             if (state.currentTab === 'admin') {
                 elements.adminAccessRequired.classList.toggle('hidden', isAdmin);
                 elements.adminContent.classList.toggle('hidden', !isAdmin);
@@ -797,18 +1107,18 @@
                         displayElement.textContent = `Lokasi terdeteksi: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
                         if (targetButtonToEnable) targetButtonToEnable.disabled = false;
                         buttonElement.disabled = false;
-                        buttonElement.textContent = '📍 Dapatkan Lokasi';
+                        buttonElement.innerHTML = '📍 Dapatkan Lokasi';
                     },
                     (error) => {
                         handleLocationError(error, displayElement);
                         buttonElement.disabled = false;
-                        buttonElement.textContent = '📍 Dapatkan Lokasi';
+                        buttonElement.innerHTML = '📍 Dapatkan Lokasi';
                     }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
             } else {
                 displayElement.textContent = 'Geolocation tidak didukung oleh browser ini';
                 buttonElement.disabled = false;
-                buttonElement.textContent = '📍 Dapatkan Lokasi';
+                buttonElement.innerHTML = '📍 Dapatkan Lokasi';
             }
         }
         
@@ -956,7 +1266,7 @@
                 return;
             }
             elements.absenList.innerHTML = state.absenDatangList.map(absen => `
-                <div class="attendance-item bg-white p-3 rounded-lg border border-gray-200 cursor-pointer" data-id="${absen.id}">
+                <div class="attendance-item glass-card p-3 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer" data-id="${absen.id}">
                     <p class="font-medium">${absen.tanggal}</p>
                     <p class="text-sm text-gray-600">Shift: ${absen.shift} | Datang: ${absen.waktu}</p>
                 </div>
@@ -998,7 +1308,7 @@
                 return;
             }
             elements.adminTableBody.innerHTML = state.filteredAttendanceData.map(item => `
-                <tr class="border-b hover:bg-gray-50">
+                <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td class="px-4 py-3">${item.tanggal}</td>
                     <td class="px-4 py-3">${item.nama}</td>
                     <td class="px-4 py-3">${item.shift}</td>
@@ -1006,7 +1316,7 @@
                     <td class="px-4 py-3">${item.keterlambatan || '-'}</td>
                     <td class="px-4 py-3">${item.waktu_pulang || '-'}</td>
                     <td class="px-4 py-3">${item.total_jam_kerja || '-'}</td>
-                    <td class="px-4 py-3"><span class="status-badge ${item.status === 'Pulang' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${item.status}</span></td>
+                    <td class="px-4 py-3"><span class="status-badge ${item.status === 'Pulang' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}">${item.status}</span></td>
                     <td class="px-4 py-3"><button class="edit-btn text-blue-600 hover:underline text-xs" data-id="${item.id}">Edit</button> <button class="delete-btn text-red-600 hover:underline text-xs" data-id="${item.id}">Hapus</button></td>
                 </tr>
             `).join('');
@@ -1041,8 +1351,7 @@
                 elements[`${v}View`].classList.toggle('hidden', v !== view);
                 const viewButton = elements[`view${v.charAt(0).toUpperCase() + v.slice(1)}`];
                 viewButton.classList.toggle('btn-secondary', v === view);
-                viewButton.classList.toggle('bg-gray-300', v !== view);
-                viewButton.classList.toggle('text-gray-700', v !== view);
+                viewButton.classList.toggle('btn-gray', v !== view);
             });
             if (view === 'calendar') renderCalendar();
             if (view === 'statistics' && state.allAttendanceData.length > 0) {
@@ -1062,7 +1371,7 @@
 
             // Tambahkan sel kosong untuk hari sebelum tanggal 1
             for (let i = 0; i < startingDay; i++) {
-                elements.calendarContainer.innerHTML += `<div class="calendar-day bg-gray-50"></div>`;
+                elements.calendarContainer.innerHTML += `<div class="calendar-day bg-gray-50 dark:bg-gray-800 opacity-50"></div>`;
             }
 
             // Tambahkan sel untuk setiap hari dalam bulan
@@ -1099,8 +1408,8 @@
 
         function renderStatistics(stats) {
             elements.totalAbsensi.textContent = stats.total_absensi_bulan_ini || 0;
-            elements.avgLate.textContent = `${stats.rata_rata_keterlambatan || 0} menit`;
-            elements.totalLate.textContent = `${stats.total_keterlambatan || 0} menit`;
+            elements.avgLate.textContent = `${stats.rata_rata_keterlambatan || 0} mnt`;
+            elements.totalLate.textContent = `${stats.total_keterlambatan || 0} mnt`;
         }
 
         async function switchStatsPeriod(period) {
@@ -1108,8 +1417,7 @@
             elements.statsPeriodBtns.forEach(btn => {
                 const isSelected = btn.dataset.period === period;
                 btn.classList.toggle('btn-secondary', isSelected);
-                btn.classList.toggle('bg-gray-300', !isSelected);
-                btn.classList.toggle('text-gray-700', !isSelected);
+                btn.classList.toggle('btn-gray', !isSelected);
             });
             
             elements.chartsContainer.innerHTML = '<div class="flex justify-center items-center h-48"><div class="loading-spinner"></div><p>Memuat grafik...</p></div>';
@@ -1128,6 +1436,7 @@
             }
         }
 
+        // Fungsi untuk merender grafik (dengan penyesuaian warna dark mode)
         function renderWeeklyStats(stats) {
             elements.chartsContainer.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1193,12 +1502,26 @@
             if (!ctx) return;
             if (state.charts[canvasId]) state.charts[canvasId].destroy();
             
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            const textColor = isDark ? '#e0e0e0' : '#333';
+
             const options = {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    title: { display: true, text: titleText, font: { size: 16 } },
-                    legend: { position: 'top' }
+                    title: { display: true, text: titleText, font: { size: 16 }, color: textColor },
+                    legend: { position: 'top', labels: { color: textColor } }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    },
+                    y: {
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    }
                 },
                 ...customOptions
             };
@@ -1250,23 +1573,30 @@
                 lembur: elements.editLembur.value,
                 total_jam_kerja: calculateWorkingHours(elements.editWaktuDatang.value, elements.editWaktuPulang.value)
             };
-            sendData(data, e.target.querySelector('button[type="submit"]'), 'Simpan Perubahan', () => {
+            sendData(data, e.target.querySelector('button[type="submit"]'), 'Simpan', () => {
                 hideEditModal();
                 loadAllAttendanceData();
             });
         }
         
         function deleteAttendance(id) {
-            if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
+            // Ganti confirm() bawaan dengan modal kustom jika diinginkan
+            if (!confirm('Apakah Anda yakin ingin menghapus data ini? Aksi ini tidak dapat dibatalkan.')) return;
             sendData({ action: 'delete_attendance', id }, null, null, loadAllAttendanceData);
         }
 
         function showFixUserDataModal() {
+            // Ganti prompt() bawaan dengan modal kustom
             const namaLama = prompt("Masukkan nama lama yang ingin diperbaiki:");
             if (!namaLama) return;
             const namaBaru = prompt(`Masukkan nama baru untuk "${namaLama}":`);
             if (!namaBaru) return;
-            sendData({ action: 'fix_user_data', nama_lama: namaLama, nama_baru: namaBaru }, null, null, loadAllAttendanceData);
+            
+            showToast('Memperbaiki data pengguna...', 'info');
+            sendData({ action: 'fix_user_data', nama_lama: namaLama, nama_baru: namaBaru }, null, null, () => {
+                loadAllAttendanceData();
+                showToast('Data pengguna berhasil diperbaiki!', 'success');
+            });
         }
 
         function calculateWorkingHours(startTime, endTime) {
@@ -1280,7 +1610,7 @@
             return `${hours} jam ${minutes} menit`;
         }
 
-        function formatDate(date) { return `${date.getDate()} ${date.toLocaleString('id-ID', { month: 'long' })} ${date.getFullYear()}`; }
+        function formatDate(date) { return `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`; }
         
         function updateDateTime() {
             elements.currentDatetime.textContent = new Date().toLocaleString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -1302,7 +1632,12 @@
             };
             
             toastMessage.textContent = message;
-            toast.className = `fixed top-4 right-4 bg-white p-4 rounded-lg shadow-lg border-l-4 z-50 max-w-sm fade-in border-${colors[type]}-500`;
+            // Hapus kelas warna lama
+            toast.classList.remove('border-green-500', 'border-red-500', 'border-blue-500');
+            toastIcon.classList.remove('text-green-500', 'text-red-500', 'text-blue-500');
+
+            // Tambah kelas warna baru
+            toast.classList.add(`border-${colors[type]}-500`);
             toastIcon.className = `mr-3 text-${colors[type]}-500`;
             toastIcon.innerHTML = icons[type];
             
@@ -1310,6 +1645,7 @@
             setTimeout(() => { toast.classList.add('hidden'); }, 3000);
         }
 
+        // Jalankan inisialisasi saat DOM selesai dimuat
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
