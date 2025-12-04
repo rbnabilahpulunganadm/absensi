@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>E-Absensi Klinik Nabilah Pulungan</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#db2777', // Pink 600
+                        primaryLight: '#fce7f3', // Pink 100
+                        secondary: '#9d174d', // Pink 800
+                        accent: '#fb7185', // Rose 400
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome & Fonts -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Chart & Alert -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #fdf2f8; /* Pink 50 */ }
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.5); }
+        .loader { border-top-color: #db2777; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
+        @-webkit-keyframes spinner { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .btn-fem {
+            background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+            box-shadow: 0 4px 15px rgba(190, 24, 93, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-fem:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="text-gray-800 h-screen flex flex-col overflow-hidden relative">
+
+    <!-- Background Decoration -->
+    <div class="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-pink-200 to-transparent -z-10 rounded-b-[3rem]"></div>
+
+    <!-- KONFIGURASI -->
+    <script>
+        // --- PASTE URL WEB APP ANDA DI SINI ---
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOj9qLKIYWnRqDRRV1kuULYLuRhRfxwY5a4hV5JuJT_2wQIeDdl9kyYh28G-ECGbpv/exec"; 
+        
+        // Lokasi Klinik
+        const CLINIC_LAT = 1.3695941; 
+        const CLINIC_LNG = 99.2735394; 
+        const MAX_RADIUS_METER = 2000; 
+
+        // Aturan Shift (UPDATED: Dina/Ropat & Libur)
+        const SHIFT_RULES = {
+            "Pagi": { start: "07:00", end: "14:00", late_tolerance: 15, label: "07:00 - 14:00 WIB" },
+            "Sore": { start: "14:00", end: "21:00", late_tolerance: 15, label: "14:00 - 21:00 WIB" },
+            "Jumat Full": { start: "07:00", end: "17:00", late_tolerance: 15, label: "07:00 - 17:00 WIB" },
+            // Tambahan untuk Libur & Admin
+            "Libur": { start: "-", end: "-", late_tolerance: 0, label: "OFF DAY / BEBAS" },
+            "Non-Shift": { start: "Bebas", end: "Bebas", late_tolerance: 999, label: "JAM KERJA FLEKSIBEL" }
+        };
+    </script>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/80 z-50 flex flex-col items-center justify-center hidden backdrop-blur-sm">
+        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+        <h2 class="text-center text-pink-700 font-bold">Mohon Tunggu...</h2>
+    </div>
+
+    <!-- HALAMAN 1: LOGIN -->
+    <section id="loginPage" class="flex-1 flex flex-col justify-center items-center p-6">
+        <div class="glass-panel p-8 rounded-3xl shadow-xl w-full max-w-sm border-t-4 border-pink-500">
+            <div class="text-center mb-8">
+                <div class="w-24 h-24 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                    <i class="fas fa-heartbeat text-4xl text-pink-600"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">Klinik Nabilah</h1>
+                <p class="text-sm text-pink-500 font-medium tracking-wide">SISTEM ABSENSI</p>
+            </div>
+
+            <div class="space-y-5">
+                <div class="relative">
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">PILIH NAMA</label>
+                    <select id="selectNama" class="w-full p-4 border border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-400 outline-none bg-white/80 text-gray-700 font-medium appearance-none">
+                        <option value="">-- Pilih Nama --</option>
+                        <optgroup label="Bidan (Shift)">
+                            <option value="Riska">Riska</option>
+                            <option value="Linda">Linda</option>
+                            <option value="Desva">Desva</option>
+                            <option value="Aisyah">Aisyah</option>
+                            <option value="Rina">Rina</option>
+                        </optgroup>
+                        <optgroup label="Admin / Staff">
+                            <option value="Dina">Dina</option>
+                            <option value="Ropat">Ropat</option>
+                        </optgroup>
+                    </select>
+                    <div class="absolute right-4 top-9 pointer-events-none text-pink-400">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                
+                <button onclick="handleLogin()" class="btn-fem w-full text-white font-bold py-4 rounded-xl text-lg flex justify-center items-center gap-2">
+                    <span>Masuk Aplikasi</span> <i class="fas fa-arrow-right"></i>
+                </button>
+
+                <div class="text-center pt-2">
+                    <button onclick="showAdminLogin()" class="text-xs text-gray-400 hover:text-pink-600 transition">
+                        <i class="fas fa-lock mr-1"></i> Area Admin
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HALAMAN 2: USER DASHBOARD -->
+    <section id="userDashboard" class="flex-1 flex flex-col p-5 hidden overflow-y-auto">
+        <!-- Header User -->
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center text-pink-500 text-xl border border-pink-100">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800 leading-tight">Hai, <span id="userNameDisplay" class="text-pink-600">...</span></h2>
+                    <p id="currentDateDisplay" class="text-xs text-gray-500 font-medium">...</p>
+                </div>
+            </div>
+            <button onclick="logout()" class="bg-white text-gray-400 p-2 rounded-xl shadow-sm hover:text-red-500 transition">
+                <i class="fas fa-power-off"></i>
+            </button>
+        </div>
+
+        <!-- Kartu Shift -->
+        <div class="bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl p-5 shadow-lg shadow-pink-200 mb-6 text-white relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 text-white opacity-10">
+                <i class="fas fa-calendar-alt text-9xl"></i>
+            </div>
+            <div class="relative z-10">
+                <p class="text-pink-100 text-xs font-semibold uppercase tracking-wider mb-1">Status Shift Hari Ini</p>
+                <div class="flex items-end gap-2">
+                    <h3 id="shiftDisplay" class="text-3xl font-bold">...</h3>
+                </div>
+                <p id="shiftTimeDisplay" class="text-sm text-pink-100 mt-2 bg-white/20 inline-block px-3 py-1 rounded-full backdrop-blur-sm">
+                    <i class="far fa-clock mr-1"></i> -
+                </p>
+            </div>
+        </div>
+
+        <!-- Info Lokasi -->
+        <div class="bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-100 flex items-center gap-3">
+            <div class="bg-blue-50 w-10 h-10 rounded-full flex items-center justify-center text-blue-500 shrink-0">
+                <i class="fas fa-map-marker-alt"></i>
+            </div>
+            <div class="flex-1">
+                <p id="locationStatus" class="text-sm font-semibold text-gray-700">Mencari GPS...</p>
+                <p id="distanceStatus" class="text-xs text-gray-400">Menghitung jarak...</p>
+            </div>
+        </div>
+
+        <!-- Grid Menu Absensi -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <!-- Tombol Absen Masuk -->
+            <button onclick="submitAbsensi('Hadir')" class="col-span-1 bg-white p-4 rounded-2xl shadow-sm border border-pink-100 flex flex-col items-center justify-center gap-2 hover:shadow-md transition group">
+                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition">
+                    <i class="fas fa-sign-in-alt text-xl"></i>
+                </div>
+                <span class="font-bold text-gray-600 text-sm">Absen Masuk</span>
+            </button>
+
+            <!-- Tombol Absen Pulang -->
+            <button onclick="handlePulang()" class="col-span-1 bg-white p-4 rounded-2xl shadow-sm border border-pink-100 flex flex-col items-center justify-center gap-2 hover:shadow-md transition group">
+                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition">
+                    <i class="fas fa-sign-out-alt text-xl"></i>
+                </div>
+                <span class="font-bold text-gray-600 text-sm">Absen Pulang</span>
+            </button>
+
+            <!-- Izin & Sakit -->
+            <button onclick="submitAbsensi('Sakit')" class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-center gap-2 text-gray-500 hover:bg-yellow-50 hover:text-yellow-600 transition">
+                <i class="fas fa-procedures"></i> <span class="text-sm font-medium">Sakit</span>
+            </button>
+            <button onclick="submitAbsensi('Izin')" class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-center gap-2 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition">
+                <i class="fas fa-envelope-open-text"></i> <span class="text-sm font-medium">Izin</span>
+            </button>
+        </div>
+
+        <!-- Quote / Footer -->
+        <div class="mt-auto text-center py-4">
+            <p class="text-xs text-gray-400 italic">"Melayani dengan Hati, Merawat dengan Kasih"</p>
+        </div>
+    </section>
+
+    <!-- HALAMAN 3: ADMIN -->
+    <section id="adminDashboard" class="flex-1 flex flex-col hidden bg-gray-50 h-full">
+        <!-- Header Admin -->
+        <div class="bg-white px-5 py-4 shadow-sm flex justify-between items-center z-10 sticky top-0">
+            <div>
+                <h2 class="font-bold text-pink-700 text-lg">Panel Laporan</h2>
+                <p class="text-xs text-gray-400">Data Absensi Real-time</p>
+            </div>
+            <button onclick="logout()" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-medium">Keluar</button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4">
+            <!-- Filter -->
+            <div class="bg-white p-4 rounded-xl shadow-sm mb-4 space-y-3">
+                <div class="flex gap-2">
+                    <div class="w-full">
+                        <label class="text-[10px] text-gray-400 font-bold uppercase">Dari</label>
+                        <input type="date" id="filterStartDate" class="w-full text-xs p-2 bg-gray-50 rounded border-none focus:ring-1 focus:ring-pink-300">
+                    </div>
+                    <div class="w-full">
+                        <label class="text-[10px] text-gray-400 font-bold uppercase">Sampai</label>
+                        <input type="date" id="filterEndDate" class="w-full text-xs p-2 bg-gray-50 rounded border-none focus:ring-1 focus:ring-pink-300">
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <select id="filterName" class="w-full text-xs p-2 bg-gray-50 rounded border-none focus:ring-1 focus:ring-pink-300">
+                        <option value="All">Semua Nama</option>
+                        <option value="Riska">Riska</option>
+                        <option value="Linda">Linda</option>
+                        <option value="Desva">Desva</option>
+                        <option value="Aisyah">Aisyah</option>
+                        <option value="Rina">Rina</option>
+                        <option value="Dina">Dina (Admin)</option>
+                        <option value="Ropat">Ropat (Admin)</option>
+                    </select>
+                    <button onclick="loadAdminData()" class="bg-pink-600 text-white px-4 rounded text-xs font-bold shadow-md hover:bg-pink-700">
+                        CARI
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-3 gap-3 mb-4">
+                <div class="bg-white p-3 rounded-xl shadow-sm border-b-4 border-green-400 text-center">
+                    <span class="text-2xl font-bold text-gray-700" id="statHadir">0</span>
+                    <span class="block text-[10px] text-gray-400 font-bold uppercase mt-1">Hadir</span>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-sm border-b-4 border-red-400 text-center">
+                    <span class="text-2xl font-bold text-gray-700" id="statTelat">0</span>
+                    <span class="block text-[10px] text-gray-400 font-bold uppercase mt-1">Telat</span>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-sm border-b-4 border-yellow-400 text-center">
+                    <span class="text-2xl font-bold text-gray-700" id="statIzin">0</span>
+                    <span class="block text-[10px] text-gray-400 font-bold uppercase mt-1">Izin/Skt</span>
+                </div>
+            </div>
+
+            <!-- Tabel Data -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-20">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-pink-50 text-pink-700 uppercase font-bold tracking-wider">
+                            <tr>
+                                <th class="p-3">Tgl</th>
+                                <th class="p-3">Nama</th>
+                                <th class="p-3">Shift</th>
+                                <th class="p-3">Masuk</th>
+                                <th class="p-3">Pulang</th>
+                                <th class="p-3">Ket</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody" class="divide-y divide-gray-100">
+                            <!-- Data -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Print Button -->
+        <button onclick="window.print()" class="absolute bottom-6 right-6 w-14 h-14 bg-gray-800 text-white rounded-full shadow-lg flex items-center justify-center text-xl hover:bg-black transition">
+            <i class="fas fa-print"></i>
+        </button>
+    </section>
+
+    <!-- LOGIC -->
+    <script>
+        // --- DATA SIKLUS ROSTER ---
+        const rosterCycle = [
+            { p: ["Riska", "Linda"], s: ["Desva", "Aisyah"], l: ["Rina"] },
+            { p: ["Riska", "Rina"], s: ["Desva", "Linda"], l: ["Aisyah"] },
+            { p: ["Aisyah", "Rina"], s: ["Riska", "Linda"], l: ["Desva"] },
+            { p: ["Desva", "Aisyah"], s: ["Riska", "Rina"], l: ["Linda"] },
+            { p: ["Desva", "Aisyah", "Riska"], s: ["Rina", "Linda"], l: [] }, 
+            { p: ["Linda", "Desva", "Riska"], s: ["Aisyah", "Rina"], l: [] }, 
+            { p: ["Linda", "Desva"], s: ["Aisyah", "Rina"], l: ["Riska"] }, 
+
+            { p: ["Linda", "Desva"], s: ["Aisyah", "Rina"], l: ["Riska"] },
+            { p: ["Riska", "Linda"], s: ["Desva", "Aisyah"], l: ["Rina"] },
+            { p: ["Riska", "Rina"], s: ["Desva", "Linda"], l: ["Aisyah"] },
+            { p: ["Aisyah", "Rina"], s: ["Riska", "Linda"], l: ["Desva"] },
+            { p: ["Aisyah", "Rina", "Riska"], s: ["Linda", "Desva"], l: [] },
+            { p: ["Desva", "Aisyah", "Linda"], s: ["Riska", "Rina"], l: [] },
+            { p: ["Desva", "Aisyah"], s: ["Riska", "Rina"], l: ["Linda"] },
+
+            { p: ["Desva", "Aisyah"], s: ["Riska", "Rina"], l: ["Linda"] },
+            { p: ["Linda", "Desva"], s: ["Aisyah", "Rina"], l: ["Riska"] },
+            { p: ["Riska", "Linda"], s: ["Desva", "Aisyah"], l: ["Rina"] },
+            { p: ["Riska", "Rina"], s: ["Desva", "Linda"], l: ["Aisyah"] },
+            { p: ["Riska", "Rina", "Linda"], s: ["Aisyah", "Desva"], l: [] },
+            { p: ["Aisyah", "Rina", "Linda"], s: ["Linda", "Riska"], l: [] },
+            { p: ["Aisyah", "Rina"], s: ["Riska", "Linda"], l: ["Desva"] },
+
+            { p: ["Aisyah", "Rina"], s: ["Riska", "Linda"], l: ["Desva"] },
+            { p: ["Desva", "Aisyah"], s: ["Riska", "Rina"], l: ["Linda"] },
+            { p: ["Linda", "Desva"], s: ["Aisyah", "Rina"], l: ["Riska"] },
+            { p: ["Riska", "Linda"], s: ["Desva", "Aisyah"], l: ["Rina"] },
+            { p: ["Riska", "Linda", "Desva"], s: ["Aisyah", "Rina"], l: [] },
+            { p: ["Riska", "Rina", "Aisyah"], s: ["Desva", "Linda"], l: [] },
+            { p: ["Riska", "Rina"], s: ["Desva", "Linda"], l: ["Aisyah"] },
+
+            { p: ["Riska", "Rina"], s: ["Desva", "Linda"], l: ["Aisyah"] },
+            { p: ["Aisyah", "Rina"], s: ["Riska", "Linda"], l: ["Desva"] },
+            { p: ["Desva", "Aisyah"], s: ["Riska", "Rina"], l: ["Linda"] },
+            { p: ["Linda", "Desva"], s: ["Aisyah", "Rina"], l: ["Riska"] },
+            { p: ["Linda", "Riska", "Rina"], s: ["Desva", "Aisyah"], l: [] },
+            { p: ["Aisyah", "Rina", "Linda"], s: ["Riska", "Desva"], l: [] },
+            { p: ["Riska", "Linda"], s: ["Desva", "Aisyah"], l: ["Rina"] }
+        ];
+
+        // --- GLOBAL VARIABLES ---
+        let currentUser = null;
+        let currentShift = null;
+        let userLocation = null;
+        let adminData = [];
+
+        // --- INIT & UTILS ---
+        function initApp() {
+            // Set default date filter
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('filterStartDate').value = today;
+            document.getElementById('filterEndDate').value = today;
+
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(updatePosition, errorPosition, { enableHighAccuracy: true });
+            } else {
+                document.getElementById('locationStatus').innerText = "GPS tidak support";
+            }
+        }
+
+        function getDayOfYear(date) {
+            const start = new Date(date.getFullYear(), 0, 0);
+            const diff = date - start;
+            const oneDay = 1000 * 60 * 60 * 24;
+            return Math.floor(diff / oneDay) - 1; 
+        }
+
+        function getShiftForUser(name, date = new Date()) {
+            // 1. Cek Apakah User adalah Admin (Dina / Ropat)
+            // Jika ya, langsung return Non-Shift
+            if (["Dina", "Ropat"].includes(name)) {
+                return "Non-Shift";
+            }
+
+            // 2. Jika Bukan Admin, Cek Jadwal Roster
+            const startOffset = 3; 
+            const dayIndex = getDayOfYear(date);
+            const rosterIndex = (dayIndex + startOffset) % 35;
+            const finalIndex = rosterIndex < 0 ? rosterIndex + 35 : rosterIndex;
+            const todaySchedule = rosterCycle[finalIndex];
+            const dayOfWeek = date.getDay(); 
+
+            if (todaySchedule.p.includes(name)) return "Pagi";
+            if (todaySchedule.s.includes(name)) return "Sore";
+            if (todaySchedule.l.includes(name)) return "Libur";
+            if (dayOfWeek === 5 && (todaySchedule.p.includes(name) || todaySchedule.s.includes(name))) return "Jumat Full";
+
+            // Default jika tidak ketemu di roster (jarang terjadi utk nama di roster)
+            return "Libur"; 
+        }
+
+        function updatePosition(position) {
+            userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+            const R = 6371e3; 
+            const φ1 = userLocation.lat * Math.PI/180;
+            const φ2 = CLINIC_LAT * Math.PI/180;
+            const Δφ = (CLINIC_LAT - userLocation.lat) * Math.PI/180;
+            const Δλ = (CLINIC_LNG - userLocation.lng) * Math.PI/180;
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const d = R * c; 
+
+            const distEl = document.getElementById('distanceStatus');
+            distEl.innerText = `${Math.round(d)} meter dari klinik`;
+            
+            if(d <= MAX_RADIUS_METER) {
+                document.getElementById('locationStatus').innerHTML = '<span class="text-green-600">Lokasi Terverifikasi</span>';
+            } else {
+                document.getElementById('locationStatus').innerHTML = '<span class="text-orange-500">Di Luar Area</span>';
+            }
+        }
+        function errorPosition(err) {
+            document.getElementById('locationStatus').innerText = "Mohon nyalakan GPS";
+        }
+
+        // --- LOGIN & DASHBOARD ---
+        function handleLogin() {
+            const name = document.getElementById('selectNama').value;
+            if (!name) return Swal.fire({icon: 'warning', title: 'Oops...', text: 'Pilih nama dulu ya!'});
+
+            currentUser = name;
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('userDashboard').classList.remove('hidden');
+            document.getElementById('userDashboard').classList.add('flex');
+            
+            loadUserDashboard();
+        }
+
+        function loadUserDashboard() {
+            document.getElementById('userNameDisplay').innerText = currentUser;
+            const now = new Date();
+            document.getElementById('currentDateDisplay').innerText = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+            currentShift = getShiftForUser(currentUser, now);
+            document.getElementById('shiftDisplay').innerText = currentShift === 'Non-Shift' ? 'Bebas / Admin' : currentShift;
+
+            const shiftInfo = SHIFT_RULES[currentShift];
+            if (shiftInfo) {
+                document.getElementById('shiftTimeDisplay').innerHTML = `<i class="far fa-clock mr-1"></i> ${shiftInfo.label}`;
+            } else {
+                document.getElementById('shiftTimeDisplay').innerText = "Tidak ada jadwal";
+            }
+        }
+
+        function logout() { location.reload(); }
+
+        // --- ACTIONS: MASUK, PULANG, IZIN ---
+        function handlePulang() {
+            Swal.fire({
+                title: 'Pulang Sekarang?',
+                text: "Pastikan pekerjaan sudah selesai ya!",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#db2777',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Pulang!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    sendAbsensi("ABSEN_PULANG");
+                }
+            })
+        }
+
+        function submitAbsensi(statusType) {
+            if (SCRIPT_URL === "URL_APPS_SCRIPT_ANDA_DISINI") {
+                return Swal.fire('Error Config', 'URL Script belum dipasang di index.html', 'error');
+            }
+
+            const now = new Date();
+            let lateMinutes = 0;
+            let note = "";
+
+            // Cek Keterlambatan HANYA jika bukan Non-Shift dan bukan Libur
+            if (statusType === 'Hadir' && SHIFT_RULES[currentShift]) {
+                const shiftStart = SHIFT_RULES[currentShift].start;
+                // Jika shift bebas atau libur, late calculation di-skip
+                if (shiftStart !== "-" && shiftStart !== "Bebas") {
+                    const tolerance = SHIFT_RULES[currentShift].late_tolerance;
+                    const [hStart, mStart] = shiftStart.split(':').map(Number);
+                    const shiftTimeObj = new Date(now);
+                    shiftTimeObj.setHours(hStart, mStart + tolerance, 0);
+
+                    if (now > shiftTimeObj) {
+                        lateMinutes = Math.floor((now - shiftTimeObj) / 60000);
+                    }
+                }
+            }
+
+            if (statusType !== 'Hadir') {
+                Swal.fire({
+                    title: `Keterangan ${statusType}`,
+                    input: 'textarea',
+                    inputPlaceholder: 'Tulis alasan...',
+                    showCancelButton: true,
+                    confirmButtonColor: '#db2777'
+                }).then((res) => {
+                    if (res.isConfirmed) {
+                        sendAbsensi("ABSEN_MASUK", statusType, lateMinutes, res.value);
+                    }
+                });
+            } else {
+                sendAbsensi("ABSEN_MASUK", statusType, lateMinutes, "");
+            }
+        }
+
+        function sendAbsensi(actionType, status = "", late = 0, note = "") {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+
+            const now = new Date();
+            const timeStr = now.getHours() + ":" + String(now.getMinutes()).padStart(2, '0');
+
+            let payload = {
+                action: actionType,
+                nama: currentUser,
+                lokasi: userLocation ? `${userLocation.lat}, ${userLocation.lng}` : "No GPS"
+            };
+
+            if (actionType === "ABSEN_MASUK") {
+                payload.shiftJadwal = currentShift;
+                // Jika Libur tapi Absen Hadir, dihitung Lembur
+                if (currentShift === 'Libur' && status === 'Hadir') {
+                     payload.shiftAktual = 'Lembur';
+                } 
+                // Jika Non-Shift, shift aktual tetap Non-Shift
+                else {
+                    payload.shiftAktual = currentShift;
+                }
+
+                payload.jamMasuk = timeStr;
+                payload.status = status;
+                payload.telat = late;
+                payload.keterangan = note;
+            } else {
+                // Absen Pulang
+                payload.jamPulang = timeStr;
+            }
+
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.remove('flex');
+
+                if (data.result === 'success') {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonColor: '#db2777'
+                    });
+                } else {
+                    Swal.fire('Gagal', data.message || 'Error Server', 'error');
+                }
+            })
+            .catch(err => {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.remove('flex');
+                Swal.fire('Error', 'Koneksi bermasalah', 'error');
+            });
+        }
+
+        // --- ADMIN ---
+        function showAdminLogin() {
+            Swal.fire({
+                title: 'Admin Access',
+                input: 'password',
+                inputPlaceholder: 'PIN',
+                confirmButtonColor: '#db2777'
+            }).then((res) => {
+                if(res.value === "112211") {
+                    document.getElementById('loginPage').classList.add('hidden');
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    document.getElementById('adminDashboard').classList.add('flex');
+                    loadAdminData();
+                } else if (res.isConfirmed) {
+                    Swal.fire('Salah', 'PIN Salah', 'error');
+                }
+            });
+        }
+
+        function loadAdminData() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "GET_DATA" })
+            })
+            .then(res => res.json())
+            .then(resp => {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.remove('flex');
+                if (resp.result === 'success') {
+                    adminData = resp.data;
+                    renderAdminTable();
+                }
+            });
+        }
+
+        function renderAdminTable() {
+            const startStr = document.getElementById('filterStartDate').value;
+            const endStr = document.getElementById('filterEndDate').value;
+            const nameFilter = document.getElementById('filterName').value;
+
+            const startDate = startStr ? new Date(startStr) : null;
+            const endDate = endStr ? new Date(endStr) : null;
+            if (endDate) endDate.setHours(23, 59, 59);
+
+            let h=0, t=0, i=0;
+            const tbody = document.getElementById('reportTableBody');
+            tbody.innerHTML = "";
+
+            const filtered = adminData.filter(row => {
+                const rowDate = new Date(row.tanggal);
+                if (startDate && rowDate < startDate) return false;
+                if (endDate && rowDate > endDate) return false;
+                if (nameFilter !== "All" && row.nama !== nameFilter) return false;
+                return true;
+            });
+
+            // Sort Descending
+            filtered.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+            filtered.forEach(row => {
+                if (row.status === 'Hadir') h++;
+                if (row.telat > 0) t++;
+                if (['Sakit','Izin'].includes(row.status)) i++;
+
+                const tr = document.createElement('tr');
+                tr.className = "bg-white hover:bg-pink-50 border-b border-gray-100 transition";
+                
+                let badgeClass = "bg-green-100 text-green-700";
+                if(row.status === 'Sakit') badgeClass = "bg-yellow-100 text-yellow-700";
+                if(row.status === 'Izin') badgeClass = "bg-blue-100 text-blue-700";
+
+                let timeDisplay = row.jam_masuk || "-";
+                if(row.telat > 0) timeDisplay += ` <span class="text-red-500 font-bold text-[10px]">(-${row.telat}m)</span>`;
+
+                tr.innerHTML = `
+                    <td class="p-3 text-gray-500 whitespace-nowrap">${row.tanggal.split('-').reverse().slice(0,2).join('/')}</td>
+                    <td class="p-3 font-bold text-gray-700">${row.nama}</td>
+                    <td class="p-3 text-gray-500 text-[10px]">${row.shift}</td>
+                    <td class="p-3 font-mono text-gray-600">${timeDisplay}</td>
+                    <td class="p-3 font-mono text-gray-600">${row.jam_pulang || '-'}</td>
+                    <td class="p-3"><span class="${badgeClass} px-2 py-1 rounded text-[10px] font-bold">${row.status}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('statHadir').innerText = h;
+            document.getElementById('statTelat').innerText = t;
+            document.getElementById('statIzin').innerText = i;
+        }
+        
+        initApp();
+    </script>
+</body>
+</html>
