@@ -35,9 +35,13 @@
         /* Mobile Scrollbar */
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Pulse animation for GPS */
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
 </head>
-<body class="text-gray-800 h-screen flex flex-col items-center overflow-hidden bg-pink-50">
+<body class="text-gray-800 h-screen flex flex-col items-center overflow-hidden bg-pink-50" onload="initApp()">
 
     <!-- KONFIGURASI -->
     <script>
@@ -60,7 +64,7 @@
     <!-- LOADING SCREEN -->
     <div id="loadingOverlay" class="fixed inset-0 bg-white/90 z-[99] flex flex-col items-center justify-center hidden">
         <div class="loader mb-2 w-10 h-10 border-4"></div>
-        <p class="text-xs font-bold text-pink-600 animate-pulse">Memproses Data...</p>
+        <p id="loadingText" class="text-xs font-bold text-pink-600 animate-pulse">Memproses Data...</p>
     </div>
 
     <!-- MAIN CONTAINER (Mobile Format: Max Width 480px) -->
@@ -76,7 +80,8 @@
                     <i class="fas fa-heartbeat text-3xl text-pink-600"></i>
                 </div>
                 <h1 class="text-xl font-bold text-gray-800">Klinik Nabilah</h1>
-                <p class="text-xs text-pink-500 font-bold tracking-wider mb-6">SISTEM E-ABSENSI</p>
+                <p class="text-xs text-pink-500 font-bold tracking-wider mb-6">SISTEM E-ABSENSI v4.1</p>
+                <p class="text-[10px] text-gray-400 mb-4">Fixed: Issue absen pulang</p>
 
                 <div class="text-left space-y-4">
                     <div>
@@ -107,6 +112,10 @@
                     <button onclick="showAdminLogin()" class="w-full text-center text-[10px] text-gray-400 py-2 hover:text-pink-600">
                         <i class="fas fa-lock"></i> Login Admin
                     </button>
+                    
+                    <button onclick="showDebugInfo()" class="w-full text-center text-[8px] text-gray-300 py-1 hover:text-gray-500">
+                        <i class="fas fa-bug"></i> Debug Info
+                    </button>
                 </div>
             </div>
         </section>
@@ -120,9 +129,14 @@
                     <h2 class="text-xl font-bold" id="userNameDisplay">User</h2>
                     <p class="text-[10px] bg-white/20 inline-block px-2 py-0.5 rounded-full mt-1" id="currentDateDisplay">...</p>
                 </div>
-                <button onclick="logout()" class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/40">
-                    <i class="fas fa-power-off text-xs"></i>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="refreshUserData()" class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/40">
+                        <i class="fas fa-sync text-xs"></i>
+                    </button>
+                    <button onclick="logout()" class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/40">
+                        <i class="fas fa-power-off text-xs"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Scrollable Content -->
@@ -149,8 +163,9 @@
                     <div class="w-2 h-2 rounded-full bg-gray-300 ml-2" id="gpsIndicator"></div>
                     <div class="flex-1">
                         <p id="locationStatus" class="text-[10px] font-bold text-gray-700">Mencari Lokasi...</p>
-                        <p id="distanceStatus" class="text-[10px] text-gray-400 leading-none">...</p>
+                        <p id="distanceStatus" class="text-[10px] text-gray-400 leading-none">Menunggu GPS...</p>
                     </div>
+                    <button onclick="requestLocation()" class="text-[8px] bg-gray-100 px-2 py-1 rounded text-gray-500">Refresh</button>
                 </div>
 
                 <!-- ACTION BUTTONS GRID (1 Baris 3 Tombol) -->
@@ -174,11 +189,31 @@
                     </button>
                 </div>
 
+                <!-- STATUS INFO -->
+                <div id="todayStatus" class="mb-4 hidden">
+                    <div class="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                        <p class="text-[10px] text-blue-600 font-bold flex items-center gap-2">
+                            <i class="fas fa-info-circle"></i> Status Hari Ini
+                        </p>
+                        <p class="text-xs text-blue-700 mt-1" id="todayStatusText">Belum absen hari ini</p>
+                        <p class="text-[10px] text-blue-500 mt-1" id="todayStatusTime"></p>
+                    </div>
+                </div>
+
                 <!-- HISTORY SECTION (Tempat Absen Pulang) -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="bg-gray-50 px-4 py-2 border-b border-gray-100 flex justify-between items-center">
-                        <h3 class="font-bold text-xs text-gray-600">RIWAYAT & ABSEN PULANG</h3>
-                        <button onclick="loadUserHistory()" class="text-[10px] text-pink-500"><i class="fas fa-sync"></i> Refresh</button>
+                        <h3 class="font-bold text-xs text-gray-600">
+                            <i class="fas fa-history mr-1"></i> RIWAYAT & ABSEN PULANG
+                        </h3>
+                        <div class="flex gap-2">
+                            <button onclick="loadDebugData()" class="text-[8px] text-gray-400" title="Debug">
+                                <i class="fas fa-bug"></i>
+                            </button>
+                            <button onclick="loadUserHistory()" class="text-[10px] text-pink-500">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="overflow-x-auto">
@@ -188,11 +223,14 @@
                                     <th class="p-3">Tgl</th>
                                     <th class="p-3">Shift</th>
                                     <th class="p-3">Masuk</th>
-                                    <th class="p-3 text-center">Aksi Pulang</th>
+                                    <th class="p-3 text-center">Pulang</th>
                                 </tr>
                             </thead>
                             <tbody id="userHistoryBody" class="text-xs text-gray-600 divide-y divide-gray-50">
-                                <tr><td colspan="4" class="p-4 text-center text-gray-300">Memuat data...</td></tr>
+                                <tr><td colspan="4" class="p-4 text-center text-gray-300">
+                                    <div class="loader mx-auto w-6 h-6 border-2"></div>
+                                    <p class="text-[10px] mt-2">Memuat riwayat...</p>
+                                </td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -205,7 +243,10 @@
         <!-- PAGE 3: ADMIN -->
         <section id="adminDashboard" class="flex-1 flex flex-col hidden bg-gray-50 h-full overflow-hidden">
             <div class="bg-white p-4 shadow-sm flex justify-between items-center z-10 sticky top-0">
-                <h2 class="font-bold text-pink-700">Laporan Admin</h2>
+                <div>
+                    <h2 class="font-bold text-pink-700">Laporan Admin</h2>
+                    <p class="text-[10px] text-gray-400" id="adminDataInfo">Memuat data...</p>
+                </div>
                 <button onclick="logout()" class="text-xs bg-gray-100 px-3 py-1 rounded-full">Tutup</button>
             </div>
 
@@ -223,6 +264,8 @@
                             <option value="Desva">Desva</option>
                             <option value="Aisyah">Aisyah</option>
                             <option value="Rina">Rina</option>
+                            <option value="Dina">Dina</option>
+                            <option value="Ropat">Ropat</option>
                         </select>
                         <button onclick="loadAdminData()" class="bg-pink-600 text-white px-3 rounded text-[10px] font-bold">CARI</button>
                     </div>
@@ -250,12 +293,15 @@
                                 <tr>
                                     <th class="p-2">Tgl</th>
                                     <th class="p-2">Nama</th>
+                                    <th class="p-2">Shift</th>
                                     <th class="p-2">In</th>
                                     <th class="p-2">Out</th>
                                     <th class="p-2">Ket</th>
                                 </tr>
                             </thead>
-                            <tbody id="reportTableBody" class="divide-y divide-gray-100"></tbody>
+                            <tbody id="reportTableBody" class="divide-y divide-gray-100">
+                                <tr><td colspan="6" class="p-4 text-center text-gray-300">Tidak ada data...</td></tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -310,73 +356,133 @@
         let currentShift = null;
         let userLocation = null;
         let adminData = [];
+        let userHistoryData = [];
 
+        // ========== INITIALIZATION ==========
         function initApp() {
+            console.log("=== APP INITIALIZED ===");
+            console.log("Script URL:", SCRIPT_URL);
+            
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('filterStartDate').value = today;
             document.getElementById('filterEndDate').value = today;
             
+            // Initialize GPS
             if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(updatePosition, errorPosition, { enableHighAccuracy: true });
+                navigator.geolocation.getCurrentPosition(updatePosition, errorPosition, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+                
+                // Watch position for updates
+                navigator.geolocation.watchPosition(updatePosition, errorPosition, {
+                    enableHighAccuracy: true,
+                    maximumAge: 30000
+                });
             } else {
-                document.getElementById('locationStatus').innerText = "GPS Error";
+                document.getElementById('locationStatus').innerText = "GPS Tidak Support";
+                document.getElementById('gpsIndicator').className = "w-2 h-2 rounded-full bg-red-500 ml-2";
             }
         }
 
+        function requestLocation() {
+            document.getElementById('locationStatus').innerText = "Meminta lokasi...";
+            document.getElementById('distanceStatus').innerText = "Silakan izinkan akses GPS";
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    updatePosition, 
+                    errorPosition, 
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            }
+        }
+
+        // ========== GPS FUNCTIONS ==========
+        function updatePosition(pos) {
+            userLocation = { 
+                lat: pos.coords.latitude, 
+                lng: pos.coords.longitude,
+                accuracy: pos.coords.accuracy
+            };
+            
+            const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
+            const accuracyText = userLocation.accuracy > 50 ? ` (±${Math.round(userLocation.accuracy)}m)` : '';
+            
+            document.getElementById('distanceStatus').innerText = `${Math.round(d)} m dari klinik${accuracyText}`;
+            const gpsEl = document.getElementById('gpsIndicator');
+            const locTxt = document.getElementById('locationStatus');
+
+            if(d <= MAX_RADIUS_METER) {
+                gpsEl.className = "w-2 h-2 rounded-full bg-green-500 ml-2 pulse";
+                locTxt.innerHTML = `<i class="fas fa-check-circle mr-1"></i> Lokasi Valid`;
+                locTxt.className = "text-[10px] font-bold text-green-600";
+            } else {
+                gpsEl.className = "w-2 h-2 rounded-full bg-red-500 ml-2";
+                locTxt.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> Di Luar Area`;
+                locTxt.className = "text-[10px] font-bold text-red-600";
+            }
+        }
+
+        function errorPosition(err) {
+            console.error("GPS Error:", err);
+            document.getElementById('locationStatus').innerHTML = `<i class="fas fa-exclamation-circle mr-1"></i> GPS Error`;
+            document.getElementById('locationStatus').className = "text-[10px] font-bold text-red-600";
+            document.getElementById('distanceStatus').innerText = "Aktifkan GPS dan berikan izin";
+            document.getElementById('gpsIndicator').className = "w-2 h-2 rounded-full bg-red-500 ml-2";
+        }
+
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        // ========== SHIFT CALCULATION ==========
         function getDayOfYear(date) {
             const start = new Date(date.getFullYear(), 0, 0);
             const diff = date - start;
-            return Math.floor(diff / (1000 * 60 * 60 * 24)) - 1; 
+            return Math.floor(diff / (1000 * 60 * 60 * 24)) - 1;
         }
 
         function getShiftForUser(name, date = new Date()) {
             if (["Dina", "Ropat"].includes(name)) return "Non-Shift";
             
-            const startOffset = 10; 
+            const startOffset = 10;
             const dayIndex = getDayOfYear(date);
             const rosterIndex = (dayIndex + startOffset) % 35;
             const finalIndex = rosterIndex < 0 ? rosterIndex + 35 : rosterIndex;
             const todaySchedule = rosterCycle[finalIndex];
-            const dayOfWeek = date.getDay(); 
+            const dayOfWeek = date.getDay();
 
             if (todaySchedule.p.includes(name)) return "Pagi";
             if (todaySchedule.s.includes(name)) return "Sore";
             if (todaySchedule.l.includes(name)) return "Libur";
             if (dayOfWeek === 5 && (todaySchedule.p.includes(name) || todaySchedule.s.includes(name))) return "Jumat Full";
-            return "Libur"; 
+            return "Libur";
         }
 
-        function updatePosition(pos) {
-            userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
-            
-            document.getElementById('distanceStatus').innerText = `${Math.round(d)} m dari klinik`;
-            const gpsEl = document.getElementById('gpsIndicator');
-            const locTxt = document.getElementById('locationStatus');
-
-            if(d <= MAX_RADIUS_METER) {
-                gpsEl.className = "w-2 h-2 rounded-full bg-green-500 ml-2 animate-pulse";
-                locTxt.innerHTML = "Lokasi Valid";
-                locTxt.className = "text-[10px] font-bold text-green-600";
-            } else {
-                gpsEl.className = "w-2 h-2 rounded-full bg-red-500 ml-2";
-                locTxt.innerHTML = "Terlalu Jauh";
-                locTxt.className = "text-[10px] font-bold text-red-600";
-            }
-        }
-        function errorPosition() { document.getElementById('locationStatus').innerText = "Aktifkan GPS!"; }
-
-        function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; const φ1 = lat1 * Math.PI/180; const φ2 = lat2 * Math.PI/180;
-            const Δφ = (lat2-lat1) * Math.PI/180; const Δλ = (lon2-lon1) * Math.PI/180;
-            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        }
-
-        // --- AUTH ---
+        // ========== AUTH FUNCTIONS ==========
         function handleLogin() {
             const name = document.getElementById('selectNama').value;
-            if (!name) return Swal.fire({toast:true, position:'top', icon:'warning', title:'Pilih nama dulu', showConfirmButton:false, timer:1500});
+            if (!name) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top',
+                    icon: 'warning',
+                    title: 'Pilih nama dulu',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+                return;
+            }
 
             currentUser = name;
             document.getElementById('loginPage').classList.add('hidden');
@@ -386,109 +492,309 @@
             loadUserDashboard();
             loadUserHistory();
         }
-        function logout() { location.reload(); }
 
+        function logout() {
+            Swal.fire({
+                title: 'Keluar?',
+                text: 'Apakah Anda yakin ingin keluar?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#db2777',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Keluar',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    location.reload();
+                }
+            });
+        }
+
+        function refreshUserData() {
+            loadUserDashboard();
+            loadUserHistory();
+            requestLocation();
+            
+            Swal.fire({
+                toast: true,
+                position: 'top',
+                icon: 'success',
+                title: 'Data diperbarui',
+                showConfirmButton: false,
+                timer: 1000
+            });
+        }
+
+        // ========== USER DASHBOARD ==========
         function loadUserDashboard() {
             document.getElementById('userNameDisplay').innerText = currentUser;
             const now = new Date();
-            document.getElementById('currentDateDisplay').innerText = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            document.getElementById('currentDateDisplay').innerText = now.toLocaleDateString('id-ID', { 
+                weekday: 'short',
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
             
             currentShift = getShiftForUser(currentUser, now);
             document.getElementById('shiftDisplay').innerText = currentShift === 'Non-Shift' ? 'Bebas' : currentShift;
             
             const info = SHIFT_RULES[currentShift];
-            document.getElementById('shiftTimeDisplay').innerHTML = info ? `<i class="far fa-clock"></i> ${info.label}` : "-";
+            document.getElementById('shiftTimeDisplay').innerHTML = info ? 
+                `<i class="far fa-clock"></i> ${info.label}` : 
+                `<i class="far fa-clock"></i> -`;
         }
 
-        // --- HISTORY & PULANG LOGIC ---
+        // ========== HISTORY & ABSEN PULANG ==========
         function loadUserHistory() {
             const tbody = document.getElementById('userHistoryBody');
-            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-300"><div class="loader mx-auto w-6 h-6 border-2"></div></td></tr>';
+            tbody.innerHTML = `
+                <tr><td colspan="4" class="p-4 text-center text-gray-300">
+                    <div class="loader mx-auto w-6 h-6 border-2"></div>
+                    <p class="text-[10px] mt-2">Memuat riwayat...</p>
+                </td></tr>
+            `;
 
             fetch(SCRIPT_URL, {
                 method: "POST",
-                body: JSON.stringify({ action: "GET_USER_HISTORY", nama: currentUser })
+                body: JSON.stringify({ 
+                    action: "GET_USER_HISTORY", 
+                    nama: currentUser 
+                })
             })
             .then(res => res.json())
             .then(resp => {
+                console.log("History Response:", resp);
+                
                 if(resp.result === 'success') {
+                    userHistoryData = resp.data;
                     tbody.innerHTML = "";
+                    
                     if(resp.data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-300 italic">Belum ada data.</td></tr>';
+                        tbody.innerHTML = `
+                            <tr><td colspan="4" class="p-4 text-center text-gray-300 italic">
+                                <i class="fas fa-inbox text-lg mb-2"></i><br>
+                                Belum ada data absensi.
+                            </td></tr>`;
                         return;
                     }
                     
-                    resp.data.forEach(row => {
+                    // Check today's status
+                    checkTodayStatus(resp.data);
+                    
+                    resp.data.forEach((row, index) => {
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-pink-50 transition group";
                         
+                        // Debug info
+                        console.log(`Row ${index}:`, row);
+                        
+                        const uniqueId = row.uniqueId || '';
+                        const tanggalDisplay = row.tanggal || '';
+                        const shiftDisplay = row.shift || '-';
+                        const masukDisplay = row.masuk || '-';
+                        const pulangDisplay = row.pulang || '';
+                        const status = row.status || '';
+                        
                         let actionHtml = "";
+                        let pulangClass = "";
+                        
                         // Jika Status HADIR & Belum Pulang, Tampilkan Tombol Pulang
-                        if(row.status === "Hadir" && (!row.pulang || row.pulang === "")) {
-                            actionHtml = `
-                                <button onclick="triggerPulangSpecific('${row.uniqueId}', '${row.tanggal}')" 
-                                    class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-md hover:bg-orange-600 active:scale-95 transition flex items-center gap-1 mx-auto">
-                                    <i class="fas fa-sign-out-alt"></i> PLG
-                                </button>
-                            `;
+                        if(status === "Hadir" && (!pulangDisplay || pulangDisplay === "" || pulangDisplay === "-")) {
+                            if (uniqueId) {
+                                actionHtml = `
+                                    <button onclick="triggerPulangSpecific('${escapeString(uniqueId)}', '${escapeString(tanggalDisplay)}')" 
+                                        class="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-md hover:from-orange-600 hover:to-orange-700 active:scale-95 transition flex items-center gap-1 mx-auto">
+                                        <i class="fas fa-sign-out-alt"></i> PULANG
+                                    </button>
+                                `;
+                                pulangClass = "font-bold text-orange-600";
+                            } else {
+                                actionHtml = `<span class="text-red-500 text-[9px]">ID Error</span>`;
+                            }
                         } else {
-                            actionHtml = `<span class="font-mono text-gray-500 font-bold">${row.pulang || '-'}</span>`;
+                            actionHtml = `<span class="font-mono ${pulangClass}">${pulangDisplay || '-'}</span>`;
                         }
 
                         tr.innerHTML = `
-                            <td class="p-3 text-gray-500">${row.tanggal}</td>
-                            <td class="p-3 text-[10px] text-gray-400">${row.shift}</td>
-                            <td class="p-3 font-mono font-bold text-gray-700">${row.masuk}</td>
+                            <td class="p-3 text-gray-500 font-medium">${tanggalDisplay}</td>
+                            <td class="p-3 text-[10px] text-gray-400">${shiftDisplay}</td>
+                            <td class="p-3 font-mono font-bold text-gray-700">${masukDisplay}</td>
                             <td class="p-3 text-center align-middle">${actionHtml}</td>
                         `;
                         tbody.appendChild(tr);
                     });
+                } else {
+                    tbody.innerHTML = `
+                        <tr><td colspan="4" class="p-4 text-center text-red-300">
+                            <i class="fas fa-exclamation-triangle text-lg mb-2"></i><br>
+                            Gagal memuat data.
+                        </td></tr>`;
                 }
+            })
+            .catch(error => {
+                console.error("Error loading history:", error);
+                tbody.innerHTML = `
+                    <tr><td colspan="4" class="p-4 text-center text-red-300">
+                        <i class="fas fa-wifi-slash text-lg mb-2"></i><br>
+                        Gagal terhubung ke server.
+                    </td></tr>`;
             });
         }
 
-        // FUNGSI ABSEN PULANG SPESIFIK (SOLUSI DUPLIKAT)
+        function escapeString(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        function checkTodayStatus(historyData) {
+            const today = new Date();
+            const todayStr = String(today.getDate()).padStart(2, '0') + '/' + 
+                           String(today.getMonth() + 1).padStart(2, '0');
+            
+            const todayEntry = historyData.find(entry => entry.tanggal === todayStr);
+            const statusDiv = document.getElementById('todayStatus');
+            const statusText = document.getElementById('todayStatusText');
+            const statusTime = document.getElementById('todayStatusTime');
+            
+            if (todayEntry) {
+                statusDiv.classList.remove('hidden');
+                if (todayEntry.status === 'Hadir') {
+                    if (todayEntry.pulang && todayEntry.pulang !== '' && todayEntry.pulang !== '-') {
+                        statusText.innerHTML = `<span class="text-green-600">✓ Sudah absen pulang</span>`;
+                        statusTime.textContent = `Masuk: ${todayEntry.masuk} | Pulang: ${todayEntry.pulang}`;
+                    } else {
+                        statusText.innerHTML = `<span class="text-blue-600">✓ Sudah absen masuk</span>`;
+                        statusTime.textContent = `Jam masuk: ${todayEntry.masuk} | Silakan absen pulang nanti`;
+                    }
+                } else {
+                    statusText.innerHTML = `<span class="text-yellow-600">Status: ${todayEntry.status}</span>`;
+                    statusTime.textContent = `Catatan: ${todayEntry.keterangan || '-'}`;
+                }
+            } else {
+                statusDiv.classList.add('hidden');
+            }
+        }
+
+        // ========== ABSEN PULANG FUNCTION ==========
         function triggerPulangSpecific(timestampId, dateDisplay) {
+            console.log("=== TRIGGER PULANG ===");
+            console.log("Timestamp ID:", timestampId);
+            console.log("Date Display:", dateDisplay);
+            console.log("Current User:", currentUser);
+            console.log("Length:", timestampId.length);
+            
+            // Validasi timestamp
+            if (!timestampId || timestampId.length < 10) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Timestamp tidak valid. Silakan refresh halaman.',
+                    confirmButtonColor: '#db2777'
+                });
+                return;
+            }
+            
             Swal.fire({
-                title: 'Pulang?',
-                text: `Konfirmasi pulang untuk data tgl ${dateDisplay}`,
+                title: 'Absen Pulang?',
+                html: `
+                    <div class="text-left">
+                        <p>Konfirmasi absen pulang untuk:</p>
+                        <p><strong>Tanggal:</strong> ${dateDisplay}</p>
+                        <p><strong>Waktu:</strong> ${new Date().toLocaleTimeString('id-ID')}</p>
+                        <p class="text-xs text-gray-400 mt-2">Pastikan Anda sudah berada di luar area kerja.</p>
+                    </div>
+                `,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#f97316', // Orange
-                confirmButtonText: 'Ya, Pulang',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    toggleLoading(true);
-                    
-                    const now = new Date();
-                    const jamPulang = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
-
-                    fetch(SCRIPT_URL, {
-                        method: "POST",
-                        body: JSON.stringify({
+                confirmButtonColor: '#f97316',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Absen Pulang',
+                cancelButtonText: 'Batal',
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    return new Promise((resolve, reject) => {
+                        const now = new Date();
+                        const jamPulang = String(now.getHours()).padStart(2, '0') + ":" + 
+                                         String(now.getMinutes()).padStart(2, '0');
+                        
+                        const payload = {
                             action: "ABSEN_PULANG_SPECIFIC",
                             nama: currentUser,
-                            timestampId: timestampId, // KUNCI UNIK
+                            timestampId: timestampId,
                             jamPulang: jamPulang
+                        };
+                        
+                        console.log("Sending payload:", payload);
+                        
+                        fetch(SCRIPT_URL, {
+                            method: "POST",
+                            body: JSON.stringify(payload)
                         })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        toggleLoading(false);
-                        if(data.result === 'success') {
-                            Swal.fire({icon:'success', title:'Berhasil Pulang!', timer:1500, showConfirmButton:false});
-                            loadUserHistory(); // Refresh
-                        } else {
-                            Swal.fire('Gagal', data.message, 'error');
-                        }
+                        .then(res => res.json())
+                        .then(data => {
+                            console.log("Server response:", data);
+                            resolve(data);
+                        })
+                        .catch(error => {
+                            console.error("Fetch error:", error);
+                            reject(error);
+                        });
                     });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const data = result.value;
+                    if(data.result === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            html: `
+                                <div class="text-center">
+                                    <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
+                                    <p>Absen pulang berhasil disimpan.</p>
+                                    <p class="text-sm font-bold mt-2">${data.message}</p>
+                                </div>
+                            `,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        
+                        // Refresh history after 1 second
+                        setTimeout(() => {
+                            loadUserHistory();
+                        }, 1000);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            html: `
+                                <div class="text-left">
+                                    <p>${data.message}</p>
+                                    <p class="text-xs text-gray-500 mt-2">Timestamp: ${timestampId.substring(0, 30)}...</p>
+                                    <p class="text-xs text-gray-500">Silakan coba lagi atau hubungi admin.</p>
+                                </div>
+                            `,
+                            confirmButtonColor: '#db2777'
+                        });
+                    }
                 }
             });
         }
 
-        // --- ABSEN MASUK / IZIN ---
+        // ========== ABSEN MASUK / IZIN / SAKIT ==========
         function submitAbsensi(statusType) {
+            // Validasi GPS
+            if (!userLocation && statusType === 'Hadir') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'GPS Tidak Aktif',
+                    text: 'Aktifkan GPS untuk absen masuk. Untuk izin/sakit, silakan isi alasan.',
+                    confirmButtonColor: '#db2777'
+                });
+                return;
+            }
+            
             const now = new Date();
             let lateMinutes = 0;
 
@@ -504,27 +810,66 @@
 
             if (statusType !== 'Hadir') {
                 Swal.fire({
-                    title: `Info ${statusType}`,
-                    input: 'textarea',
-                    inputPlaceholder: 'Alasan...',
-                    confirmButtonColor: '#db2777'
+                    title: `Form ${statusType}`,
+                    html: `
+                        <div class="text-left">
+                            <p class="text-sm mb-2">Isikan alasan ${statusType.toLowerCase()}:</p>
+                            <textarea id="reasonInput" class="w-full p-2 border border-gray-300 rounded text-sm" 
+                                rows="3" placeholder="Contoh: ${statusType === 'Izin' ? 'Izin ke rumah sakit' : 'Sakit demam'}..."></textarea>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonColor: '#db2777',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Kirim',
+                    cancelButtonText: 'Batal',
+                    preConfirm: () => {
+                        const reason = document.getElementById('reasonInput').value;
+                        if (!reason || reason.trim() === '') {
+                            Swal.showValidationMessage('Harap isi alasan');
+                            return false;
+                        }
+                        return reason;
+                    }
                 }).then((res) => {
-                    if (res.isConfirmed) sendAbsenData(statusType, lateMinutes, res.value);
+                    if (res.isConfirmed) {
+                        sendAbsenData(statusType, lateMinutes, res.value);
+                    }
                 });
             } else {
+                // Validasi lokasi untuk absen masuk
+                const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
+                if (d > MAX_RADIUS_METER) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Di Luar Area',
+                        html: `
+                            <div class="text-left">
+                                <p>Anda berada di luar area klinik.</p>
+                                <p class="text-sm">Jarak: ${Math.round(d)} m (maks: ${MAX_RADIUS_METER} m)</p>
+                                <p class="text-xs text-gray-500 mt-2">Silakan mendekat ke klinik untuk absen.</p>
+                            </div>
+                        `,
+                        confirmButtonColor: '#db2777'
+                    });
+                    return;
+                }
+                
                 sendAbsenData(statusType, lateMinutes, "");
             }
         }
 
         function sendAbsenData(status, late, note) {
-            toggleLoading(true);
+            toggleLoading(true, `Menyimpan absensi ${status}...`);
+            
             const now = new Date();
-            const timeStr = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+            const timeStr = String(now.getHours()).padStart(2, '0') + ":" + 
+                          String(now.getMinutes()).padStart(2, '0');
 
             const payload = {
                 action: "ABSEN_MASUK",
                 nama: currentUser,
-                lokasi: userLocation ? `${userLocation.lat}, ${userLocation.lng}` : "No GPS",
+                lokasi: userLocation ? `${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}` : "No GPS",
                 shiftJadwal: currentShift,
                 shiftAktual: (currentShift === 'Libur' && status === 'Hadir') ? 'Lembur' : currentShift,
                 jamMasuk: timeStr,
@@ -533,27 +878,81 @@
                 keterangan: note
             };
 
-            fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) })
+            console.log("Sending absen data:", payload);
+            
+            fetch(SCRIPT_URL, { 
+                method: "POST", 
+                body: JSON.stringify(payload) 
+            })
             .then(res => res.json())
             .then(data => {
                 toggleLoading(false);
+                console.log("Absen response:", data);
+                
                 if (data.result === 'success') {
-                    Swal.fire({icon: 'success', title: 'Tersimpan!', timer: 1500, showConfirmButton: false});
-                    loadUserHistory(); 
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Tersimpan!',
+                        html: `
+                            <div class="text-center">
+                                <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
+                                <p>${data.message}</p>
+                                <p class="text-sm font-bold mt-2">Jam: ${timeStr}</p>
+                                ${late > 0 ? `<p class="text-orange-600 text-sm">Keterlambatan: ${late} menit</p>` : ''}
+                            </div>
+                        `,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    
+                    // Refresh data setelah 1 detik
+                    setTimeout(() => {
+                        loadUserHistory();
+                    }, 1000);
                 } else {
-                    Swal.fire('Gagal', data.message, 'error');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: data.message || 'Terjadi kesalahan',
+                        confirmButtonColor: '#db2777'
+                    });
                 }
+            })
+            .catch(error => {
+                toggleLoading(false);
+                console.error("Error:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Koneksi Error',
+                    text: 'Gagal terhubung ke server. Periksa koneksi internet.',
+                    confirmButtonColor: '#db2777'
+                });
             });
         }
 
-        // --- ADMIN ---
+        // ========== ADMIN FUNCTIONS ==========
         function showAdminLogin() {
             Swal.fire({
-                title: 'Admin',
-                input: 'password',
-                confirmButtonColor: '#db2777'
-            }).then((res) => {
-                if(res.value === "112211") {
+                title: 'Login Admin',
+                html: `
+                    <div class="text-left">
+                        <p class="text-sm mb-2">Masukkan password admin:</p>
+                        <input type="password" id="adminPassword" class="swal2-input" placeholder="Password">
+                    </div>
+                `,
+                confirmButtonColor: '#db2777',
+                showCancelButton: true,
+                cancelButtonText: 'Batal',
+                preConfirm: () => {
+                    const password = document.getElementById('adminPassword').value;
+                    if (password !== "112211") {
+                        Swal.showValidationMessage('Password salah');
+                        return false;
+                    }
+                    return true;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
                     document.getElementById('loginPage').classList.add('hidden');
                     document.getElementById('adminDashboard').classList.remove('hidden');
                     document.getElementById('adminDashboard').classList.add('flex');
@@ -563,15 +962,27 @@
         }
 
         function loadAdminData() {
-            toggleLoading(true);
-            fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "GET_DATA" }) })
+            toggleLoading(true, "Memuat data admin...");
+            
+            fetch(SCRIPT_URL, { 
+                method: "POST", 
+                body: JSON.stringify({ action: "GET_DATA" }) 
+            })
             .then(res => res.json())
             .then(resp => {
                 toggleLoading(false);
                 if (resp.result === 'success') {
                     adminData = resp.data;
+                    document.getElementById('adminDataInfo').textContent = 
+                        `${resp.total} data ditemukan | ${new Date().toLocaleTimeString('id-ID')}`;
                     renderAdminTable();
+                } else {
+                    Swal.fire('Error', resp.message || 'Gagal memuat data', 'error');
                 }
+            })
+            .catch(error => {
+                toggleLoading(false);
+                Swal.fire('Error', 'Gagal terhubung ke server', 'error');
             });
         }
 
@@ -579,6 +990,7 @@
             const startStr = document.getElementById('filterStartDate').value;
             const endStr = document.getElementById('filterEndDate').value;
             const nameFilter = document.getElementById('filterName').value;
+            
             const sDate = startStr ? new Date(startStr) : null;
             const eDate = endStr ? new Date(endStr) : null;
             if (sDate) sDate.setHours(0,0,0,0);
@@ -597,7 +1009,24 @@
                 return true;
             });
 
-            filtered.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort by full timestamp
+            // Sort by timestamp descending (newest first)
+            filtered.sort((a,b) => {
+                const dateA = new Date(a.timestamp || a.tanggal);
+                const dateB = new Date(b.timestamp || b.tanggal);
+                return dateB - dateA;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr><td colspan="6" class="p-4 text-center text-gray-300">
+                        <i class="fas fa-inbox text-lg mb-2"></i><br>
+                        Tidak ada data untuk filter ini.
+                    </td></tr>`;
+                document.getElementById('statHadir').innerText = "0";
+                document.getElementById('statTelat').innerText = "0";
+                document.getElementById('statIzin').innerText = "0";
+                return;
+            }
 
             filtered.forEach(row => {
                 if (row.status === 'Hadir') h++;
@@ -607,29 +1036,104 @@
                 const tr = document.createElement('tr');
                 tr.className = "border-b border-gray-100 hover:bg-pink-50";
                 
-                let dateDisp = row.tanggal.split('-').reverse().slice(0,2).join('/'); // DD/MM
-                let statusBadge = row.status === 'Hadir' ? 'text-green-600' : 'text-yellow-600';
+                let dateDisp = row.tanggal ? row.tanggal.split('-').reverse().slice(0,2).join('/') : '-';
+                let statusClass = row.status === 'Hadir' ? 
+                    (row.jam_pulang && row.jam_pulang !== '-' ? 'text-green-600' : 'text-blue-600') : 
+                    'text-yellow-600';
+                
+                // Highlight jika telat
+                const isLate = parseInt(row.telat) > 0;
+                const lateBadge = isLate ? 
+                    `<span class="text-[8px] bg-red-100 text-red-700 px-1 py-0.5 rounded ml-1">+${row.telat}m</span>` : '';
 
                 tr.innerHTML = `
-                    <td class="p-2 text-gray-500 font-mono">${dateDisp}</td>
-                    <td class="p-2 font-bold text-gray-700">${row.nama}</td>
-                    <td class="p-2 font-mono text-gray-600">${row.jam_masuk}</td>
-                    <td class="p-2 font-mono text-gray-600">${row.jam_pulang || '-'}</td>
-                    <td class="p-2 font-bold text-[9px] uppercase ${statusBadge}">${row.status}</td>
+                    <td class="p-2 text-gray-500 font-mono text-[9px]">${dateDisp}</td>
+                    <td class="p-2 font-bold text-gray-700 text-[9px]">${row.nama}</td>
+                    <td class="p-2 text-gray-600 text-[9px]">${row.shift || '-'}</td>
+                    <td class="p-2 font-mono text-gray-600 text-[9px]">${row.jam_masuk || '-'}${lateBadge}</td>
+                    <td class="p-2 font-mono text-gray-600 text-[9px]">${row.jam_pulang || '-'}</td>
+                    <td class="p-2 font-bold text-[9px] uppercase ${statusClass}">${row.status}</td>
                 `;
                 tbody.appendChild(tr);
             });
+            
             document.getElementById('statHadir').innerText = h;
             document.getElementById('statTelat').innerText = t;
             document.getElementById('statIzin').innerText = i;
         }
 
-        function toggleLoading(show) {
-            const el = document.getElementById('loadingOverlay');
-            if(show) el.classList.remove('hidden'); else el.classList.add('hidden');
+        // ========== DEBUG FUNCTIONS ==========
+        function showDebugInfo() {
+            console.log("=== DEBUG INFO ===");
+            console.log("Current User:", currentUser);
+            console.log("Current Shift:", currentShift);
+            console.log("User Location:", userLocation);
+            console.log("Script URL:", SCRIPT_URL);
+            console.log("User History Data:", userHistoryData);
+            
+            Swal.fire({
+                title: 'Debug Info',
+                html: `
+                    <div class="text-left text-xs">
+                        <p><strong>User:</strong> ${currentUser || 'Not logged in'}</p>
+                        <p><strong>Shift:</strong> ${currentShift || '-'}</p>
+                        <p><strong>Location:</strong> ${userLocation ? `${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}` : 'No GPS'}</p>
+                        <p><strong>Script URL:</strong> ${SCRIPT_URL.substring(0, 50)}...</p>
+                        <p><strong>History Count:</strong> ${userHistoryData.length}</p>
+                        <p><strong>Browser:</strong> ${navigator.userAgent.substring(0, 50)}...</p>
+                        <p><strong>Time:</strong> ${new Date().toLocaleString('id-ID')}</p>
+                    </div>
+                `,
+                icon: 'info',
+                confirmButtonColor: '#db2777',
+                confirmButtonText: 'OK'
+            });
         }
 
-        initApp();
+        function loadDebugData() {
+            if (!currentUser) return;
+            
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    action: "DEBUG_DATA", 
+                    nama: currentUser 
+                })
+            })
+            .then(res => res.json())
+            .then(resp => {
+                console.log("Debug Data:", resp);
+                Swal.fire({
+                    title: 'Debug Data',
+                    html: `
+                        <div class="text-left text-xs max-h-60 overflow-y-auto">
+                            <pre>${JSON.stringify(resp, null, 2)}</pre>
+                        </div>
+                    `,
+                    width: '80%',
+                    confirmButtonColor: '#db2777'
+                });
+            });
+        }
+
+        // ========== UTILITY FUNCTIONS ==========
+        function toggleLoading(show, message = "Memproses Data...") {
+            const el = document.getElementById('loadingOverlay');
+            const textEl = document.getElementById('loadingText');
+            
+            textEl.textContent = message;
+            
+            if (show) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+
+        // ========== INIT APP ON LOAD ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+        });
     </script>
 </body>
 </html>
