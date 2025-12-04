@@ -44,14 +44,13 @@
         // --- GANTI URL INI DENGAN DEPLOYMENT BARU ANDA ---
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOj9qLKIYWnRqDRRV1kuULYLuRhRfxwY5a4hV5JuJT_2wQIeDdl9kyYh28G-ECGbpv/exec"; 
         
-        const CLINIC_LAT = 1.3695941; 
-        const CLINIC_LNG = 99.2735394; 
-        const MAX_RADIUS_METER = 2000; 
+        const CLINIC_LAT = 1.3695652; 
+        const CLINIC_LNG = 99.2735516; 
+        const MAX_RADIUS_METER = 20000; 
 
         const SHIFT_RULES = {
-            "Pagi": { start: "08:00", end: "14:00", late_tolerance: 15, label: "08:00 - 14:00" },
-            "Sore": { start: "14:00", end: "20:00", late_tolerance: 15, label: "14:00 - 20:00" },
-            "Malam": { start: "20:00", end: "08:00", late_tolerance: 15, label: "20:00 - 08:00" },
+            "Pagi": { start: "08:00", end: "17:00", late_tolerance: 15, label: "08:00 - 17:00" },
+            "Sore": { start: "15:00", end: "21:30", late_tolerance: 15, label: "15:00 - 21:30" },
             "Jumat Full": { start: "08:00", end: "17:00", late_tolerance: 15, label: "08:00 - 17:00" },
             "Libur": { start: "-", end: "-", late_tolerance: 0, label: "OFF" },
             "Non-Shift": { start: "Bebas", end: "Bebas", late_tolerance: 999, label: "FLEKSIBEL" }
