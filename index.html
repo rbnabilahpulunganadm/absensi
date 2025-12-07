@@ -61,6 +61,13 @@
         .badge-libur-nasional { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
         .badge-non { background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
         .badge-lembur { background-color: #ede9fe; color: #5b21b6; border: 1px solid #a78bfa; }
+        
+        /* Fade In Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
     </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col items-center overflow-hidden bg-pink-50" onload="initApp()">
@@ -104,7 +111,7 @@
                     <i class="fas fa-calendar-alt text-3xl text-pink-600"></i>
                 </div>
                 <h1 class="text-xl font-bold text-gray-800">Klinik Nabilah</h1>
-                <p class="text-xs text-pink-500 font-bold tracking-wider mb-2">SISTEM E-ABSENSI v5.0</p>
+                <p class="text-xs text-pink-500 font-bold tracking-wider mb-2">SISTEM E-ABSENSI v5.1</p>
                 <p class="text-[10px] text-gray-400 mb-4">Enhanced Scheduling System</p>
 
                 <div class="text-left space-y-4">
@@ -170,6 +177,22 @@
             <!-- Scrollable Content -->
             <div class="flex-1 overflow-y-auto px-4 pb-6 hide-scroll">
                 
+                <!-- TODAY'S STATUS BANNER -->
+                <div id="todayStatusBanner" class="mb-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl p-3 shadow-lg fade-in hidden">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-[10px] opacity-80">Status Hari Ini</p>
+                            <p class="text-sm font-bold" id="todayStatusText">Belum absen</p>
+                            <p class="text-[10px] opacity-90" id="todayStatusDetails"></p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] opacity-80">Jam Kerja</p>
+                            <p class="text-sm font-bold" id="todayShiftTime">-</p>
+                        </div>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-white/20" id="todayActionButtons"></div>
+                </div>
+
                 <!-- SHIFT INFO CARD -->
                 <div class="bg-white rounded-2xl p-4 shadow-md mb-4 mt-2 border border-pink-50" id="shiftInfoCard">
                     <!-- Konten akan diisi oleh JavaScript -->
@@ -187,7 +210,7 @@
 
                 <!-- ACTION BUTTONS -->
                 <div class="grid grid-cols-3 gap-3 mb-5">
-                    <button onclick="submitAbsensi('Hadir')" class="col-span-1 bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-xl shadow-lg shadow-green-200 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24">
+                    <button onclick="submitAbsensi('Hadir')" id="btnAbsenMasuk" class="col-span-1 bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-xl shadow-lg shadow-green-200 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24">
                         <i class="fas fa-fingerprint text-2xl"></i>
                         <span class="text-xs font-bold leading-none mt-1">ABSEN<br>MASUK</span>
                     </button>
@@ -201,17 +224,6 @@
                         <i class="fas fa-procedures text-xl"></i>
                         <span class="text-xs font-bold">Sakit</span>
                     </button>
-                </div>
-
-                <!-- TODAY'S STATUS -->
-                <div id="todayStatus" class="mb-4 hidden">
-                    <div class="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                        <p class="text-[10px] text-blue-600 font-bold flex items-center gap-2">
-                            <i class="fas fa-info-circle"></i> Status Hari Ini
-                        </p>
-                        <p class="text-xs text-blue-700 mt-1" id="todayStatusText">Belum absen hari ini</p>
-                        <p class="text-[10px] text-blue-500 mt-1" id="todayStatusTime"></p>
-                    </div>
                 </div>
 
                 <!-- QUICK SCHEDULE PREVIEW -->
@@ -248,10 +260,11 @@
                                     <th class="p-3">Shift</th>
                                     <th class="p-3">Masuk</th>
                                     <th class="p-3">Pulang</th>
+                                    <th class="p-3">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="userHistoryBody" class="text-xs text-gray-600 divide-y divide-gray-50">
-                                <tr><td colspan="5" class="p-4 text-center text-gray-300">
+                                <tr><td colspan="6" class="p-4 text-center text-gray-300">
                                     <div class="loader mx-auto w-6 h-6 border-2"></div>
                                     <p class="text-[10px] mt-2">Memuat riwayat...</p>
                                 </td></tr>
@@ -451,6 +464,7 @@
         let userLocation = null;
         let adminData = [];
         let userHistoryData = [];
+        let todayStatus = null;
         
         // Untuk schedule view
         let scheduleCurrentMonth = new Date().getMonth() + 1;
@@ -578,6 +592,7 @@
             loadUserDashboard();
             loadUserHistory();
             loadNextDaysSchedule();
+            checkTodayStatus();
         }
 
         function logout() {
@@ -601,6 +616,7 @@
             loadUserDashboard();
             loadUserHistory();
             loadNextDaysSchedule();
+            checkTodayStatus();
             requestLocation();
             
             Swal.fire({
@@ -610,6 +626,226 @@
                 title: 'Data diperbarui',
                 showConfirmButton: false,
                 timer: 1000
+            });
+        }
+
+        // ========== TODAY STATUS FUNCTIONS ==========
+        function checkTodayStatus() {
+            if (!currentUser) return;
+            
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "GET_TODAY_STATUS",
+                    nama: currentUser
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.result === 'success') {
+                    todayStatus = data.data;
+                    updateTodayStatusBanner();
+                }
+            })
+            .catch(error => {
+                console.error("Error checking today status:", error);
+            });
+        }
+
+        function updateTodayStatusBanner() {
+            const banner = document.getElementById('todayStatusBanner');
+            const statusText = document.getElementById('todayStatusText');
+            const statusDetails = document.getElementById('todayStatusDetails');
+            const shiftTime = document.getElementById('todayShiftTime');
+            const actionButtons = document.getElementById('todayActionButtons');
+            const btnAbsenMasuk = document.getElementById('btnAbsenMasuk');
+            
+            if (!todayStatus || todayStatus.status === "Belum Absen") {
+                banner.classList.add('hidden');
+                btnAbsenMasuk.disabled = false;
+                btnAbsenMasuk.className = "col-span-1 bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-xl shadow-lg shadow-green-200 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24";
+                return;
+            }
+            
+            banner.classList.remove('hidden');
+            
+            if (todayStatus.status === "Hadir") {
+                if (todayStatus.sudah_pulang) {
+                    // Sudah absen pulang
+                    statusText.textContent = "✓ Sudah Absen Hari Ini";
+                    statusDetails.innerHTML = `Masuk: <strong>${todayStatus.jam_masuk}</strong> | Pulang: <strong>${todayStatus.jam_pulang}</strong>`;
+                    shiftTime.textContent = todayStatus.shift === "Sore" ? "15:00-21:30" : "08:00-17:00";
+                    
+                    actionButtons.innerHTML = `
+                        <button class="text-[10px] bg-white/20 px-3 py-1 rounded-full hover:bg-white/30">
+                            <i class="fas fa-check-circle mr-1"></i> Selesai
+                        </button>
+                    `;
+                    
+                    btnAbsenMasuk.disabled = true;
+                    btnAbsenMasuk.className = "col-span-1 bg-gray-300 text-gray-500 p-3 rounded-xl cursor-not-allowed flex flex-col items-center justify-center gap-1 h-24";
+                } else {
+                    // Sudah absen masuk, belum pulang
+                    statusText.textContent = "✓ Sudah Absen Masuk";
+                    statusDetails.innerHTML = `Masuk: <strong>${todayStatus.jam_masuk}</strong> | Belum absen pulang`;
+                    shiftTime.textContent = todayStatus.shift === "Sore" ? "15:00-21:30" : "08:00-17:00";
+                    
+                    actionButtons.innerHTML = `
+                        <button onclick="absenPulangToday()" class="text-[10px] bg-white text-orange-600 px-3 py-1 rounded-full font-bold hover:bg-white/90">
+                            <i class="fas fa-sign-out-alt mr-1"></i> Absen Pulang Sekarang
+                        </button>
+                    `;
+                    
+                    btnAbsenMasuk.disabled = true;
+                    btnAbsenMasuk.className = "col-span-1 bg-gray-300 text-gray-500 p-3 rounded-xl cursor-not-allowed flex flex-col items-center justify-center gap-1 h-24";
+                }
+            } else if (todayStatus.status === "Izin" || todayStatus.status === "Sakit") {
+                // Sudah izin/sakit
+                statusText.textContent = `✓ ${todayStatus.status}`;
+                statusDetails.textContent = "Tidak perlu absen masuk/pulang";
+                shiftTime.textContent = "-";
+                
+                actionButtons.innerHTML = `
+                    <button class="text-[10px] bg-white/20 px-3 py-1 rounded-full hover:bg-white/30">
+                        <i class="fas fa-info-circle mr-1"></i> Sudah diizinkan
+                    </button>
+                `;
+                
+                btnAbsenMasuk.disabled = true;
+                btnAbsenMasuk.className = "col-span-1 bg-gray-300 text-gray-500 p-3 rounded-xl cursor-not-allowed flex flex-col items-center justify-center gap-1 h-24";
+            }
+        }
+
+        function absenPulangToday() {
+            if (!userLocation) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'GPS Tidak Aktif',
+                    text: 'Aktifkan GPS untuk absen pulang.',
+                    confirmButtonColor: '#db2777'
+                });
+                return;
+            }
+            
+            // Validasi lokasi
+            const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
+            if (d > MAX_RADIUS_METER) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Di Luar Area',
+                    html: `
+                        <div class="text-left">
+                            <p>Anda berada di luar area klinik.</p>
+                            <p class="text-sm">Jarak: ${Math.round(d)} m (maks: ${MAX_RADIUS_METER} m)</p>
+                            <p class="text-xs text-gray-500 mt-2">Absen pulang tetap bisa dilakukan.</p>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Tetap Absen Pulang',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#f97316'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        processAbsenPulang();
+                    }
+                });
+            } else {
+                processAbsenPulang();
+            }
+        }
+
+        function processAbsenPulang() {
+            const now = new Date();
+            const jamPulang = String(now.getHours()).padStart(2, '0') + ":" + 
+                            String(now.getMinutes()).padStart(2, '0');
+            
+            Swal.fire({
+                title: 'Absen Pulang?',
+                html: `
+                    <div class="text-left">
+                        <p>Konfirmasi absen pulang untuk:</p>
+                        <p><strong>Nama:</strong> ${currentUser}</p>
+                        <p><strong>Jam Pulang:</strong> ${jamPulang}</p>
+                        <p><strong>Lokasi:</strong> ${userLocation ? `${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}` : 'GPS tidak aktif'}</p>
+                        <p class="text-xs text-gray-400 mt-2">Pastikan Anda sudah menyelesaikan pekerjaan hari ini.</p>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#f97316',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Absen Pulang',
+                cancelButtonText: 'Batal',
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    return new Promise((resolve, reject) => {
+                        const payload = {
+                            action: "ABSEN_PULANG",
+                            nama: currentUser,
+                            jamPulang: jamPulang
+                        };
+                        
+                        console.log("📤 Mengirim absen pulang:", payload);
+                        
+                        fetch(SCRIPT_URL, {
+                            method: "POST",
+                            body: JSON.stringify(payload)
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            console.log("📥 Response absen pulang:", data);
+                            resolve(data);
+                        })
+                        .catch(error => {
+                            console.error("❌ Error absen pulang:", error);
+                            reject(error);
+                        });
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const data = result.value;
+                    if(data.result === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            html: `
+                                <div class="text-center">
+                                    <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
+                                    <p>Absen pulang berhasil disimpan.</p>
+                                    <p class="text-sm font-bold mt-2">Jam: ${jamPulang}</p>
+                                    <p class="text-xs text-gray-500">Selamat beristirahat!</p>
+                                </div>
+                            `,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        
+                        // Update status
+                        setTimeout(() => {
+                            checkTodayStatus();
+                            loadUserHistory();
+                        }, 1000);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            html: `
+                                <div class="text-left">
+                                    <p>${data.message}</p>
+                                    <p class="text-xs text-red-500 mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        ${data.message.includes('tidak ditemukan') ? 
+                                            'Pastikan Anda sudah absen masuk hari ini.' : 
+                                            'Silakan coba lagi atau hubungi admin.'}
+                                    </p>
+                                </div>
+                            `,
+                            confirmButtonColor: '#db2777'
+                        });
+                    }
+                }
             });
         }
 
@@ -701,6 +937,355 @@
                 case 'Lembur': return 'LM';
                 default: return shiftType.substring(0, 2).toUpperCase();
             }
+        }
+
+        // ========== ABSENSI FUNCTIONS ==========
+        function submitAbsensi(statusType) {
+            // Cek status hari ini dulu
+            if (todayStatus && todayStatus.status !== "Belum Absen") {
+                if (statusType === 'Hadir' && todayStatus.status === 'Hadir') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Sudah Absen',
+                        text: 'Anda sudah absen masuk hari ini.',
+                        confirmButtonColor: '#db2777'
+                    });
+                    return;
+                }
+                
+                if ((statusType === 'Izin' || statusType === 'Sakit') && 
+                    (todayStatus.status === 'Izin' || todayStatus.status === 'Sakit')) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Sudah Diizinkan',
+                        text: `Anda sudah mengajukan ${todayStatus.status.toLowerCase()} hari ini.`,
+                        confirmButtonColor: '#db2777'
+                    });
+                    return;
+                }
+            }
+            
+            // Validasi GPS untuk absen masuk
+            if (statusType === 'Hadir' && (!userLocation || !userLocation.lat)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'GPS Tidak Aktif',
+                    text: 'Aktifkan GPS untuk absen masuk. Untuk izin/sakit, silakan isi alasan.',
+                    confirmButtonColor: '#db2777'
+                });
+                return;
+            }
+            
+            // Validasi lokasi untuk absen masuk
+            if (statusType === 'Hadir' && userLocation) {
+                const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
+                if (d > MAX_RADIUS_METER) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Di Luar Area',
+                        html: `
+                            <div class="text-left">
+                                <p>Anda berada di luar area klinik.</p>
+                                <p class="text-sm">Jarak: ${Math.round(d)} m (maks: ${MAX_RADIUS_METER} m)</p>
+                                <p class="text-xs text-gray-500 mt-2">Silakan mendekat ke klinik untuk absen.</p>
+                            </div>
+                        `,
+                        confirmButtonColor: '#db2777'
+                    });
+                    return;
+                }
+            }
+            
+            if (statusType !== 'Hadir') {
+                showReasonForm(statusType);
+            } else {
+                sendAbsenData(statusType, "");
+            }
+        }
+
+        function showReasonForm(statusType) {
+            Swal.fire({
+                title: `Form ${statusType}`,
+                html: `
+                    <div class="text-left">
+                        <p class="text-sm mb-2">Isikan alasan ${statusType.toLowerCase()}:</p>
+                        <textarea id="reasonInput" class="w-full p-2 border border-gray-300 rounded text-sm" 
+                            rows="3" placeholder="Contoh: ${statusType === 'Izin' ? 'Izin ke rumah sakit' : 'Sakit demam'}..."></textarea>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#db2777',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Kirim',
+                cancelButtonText: 'Batal',
+                preConfirm: () => {
+                    const reason = document.getElementById('reasonInput').value;
+                    if (!reason || reason.trim() === '') {
+                        Swal.showValidationMessage('Harap isi alasan');
+                        return false;
+                    }
+                    return reason;
+                }
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    sendAbsenData(statusType, res.value);
+                }
+            });
+        }
+
+        function sendAbsenData(status, note) {
+            toggleLoading(true, `Menyimpan absensi ${status}...`);
+            
+            const now = new Date();
+            const timeStr = String(now.getHours()).padStart(2, '0') + ":" + 
+                          String(now.getMinutes()).padStart(2, '0');
+
+            const payload = {
+                action: "ABSEN_MASUK",
+                nama: currentUser,
+                lokasi: userLocation ? `${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}` : "No GPS",
+                jamMasuk: timeStr,
+                status: status,
+                keterangan: note
+            };
+
+            fetch(SCRIPT_URL, { 
+                method: "POST", 
+                body: JSON.stringify(payload) 
+            })
+            .then(res => res.json())
+            .then(data => {
+                toggleLoading(false);
+                
+                if (data.result === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Tersimpan!',
+                        html: `
+                            <div class="text-center">
+                                <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
+                                <p>${data.message}</p>
+                                <p class="text-sm font-bold mt-2">Jam: ${timeStr}</p>
+                                <p class="text-sm">Shift: ${data.shift}</p>
+                                ${data.rosterIndex !== undefined ? 
+                                    `<p class="text-xs text-gray-500">Roster: ${data.rosterIndex}</p>` : ''}
+                            </div>
+                        `,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    
+                    // Refresh data
+                    setTimeout(() => {
+                        checkTodayStatus();
+                        loadUserHistory();
+                        loadUserDashboard();
+                    }, 1000);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: data.message || 'Terjadi kesalahan',
+                        confirmButtonColor: '#db2777'
+                    });
+                }
+            })
+            .catch(error => {
+                toggleLoading(false);
+                console.error("Error:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Koneksi Error',
+                    text: 'Gagal terhubung ke server. Periksa koneksi internet.',
+                    confirmButtonColor: '#db2777'
+                });
+            });
+        }
+
+        // ========== HISTORY FUNCTIONS ==========
+        function loadUserHistory() {
+            const tbody = document.getElementById('userHistoryBody');
+            tbody.innerHTML = `
+                <tr><td colspan="6" class="p-4 text-center text-gray-300">
+                    <div class="loader mx-auto w-6 h-6 border-2"></div>
+                    <p class="text-[10px] mt-2">Memuat riwayat...</p>
+                </td></tr>
+            `;
+
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    action: "GET_USER_HISTORY", 
+                    nama: currentUser 
+                })
+            })
+            .then(res => res.json())
+            .then(resp => {
+                if(resp.result === 'success') {
+                    userHistoryData = resp.data;
+                    renderHistoryTable(resp.data);
+                }
+            })
+            .catch(error => {
+                console.error("Error loading history:", error);
+                tbody.innerHTML = `
+                    <tr><td colspan="6" class="p-4 text-center text-red-300">
+                        <i class="fas fa-wifi-slash text-lg mb-2"></i><br>
+                        Gagal terhubung ke server.
+                    </td></tr>`;
+            });
+        }
+
+        function renderHistoryTable(data) {
+            const tbody = document.getElementById('userHistoryBody');
+            tbody.innerHTML = "";
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `
+                    <tr><td colspan="6" class="p-4 text-center text-gray-300 italic">
+                        <i class="fas fa-inbox text-lg mb-2"></i><br>
+                        Belum ada data absensi.
+                    </td></tr>`;
+                return;
+            }
+            
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-pink-50 transition group border-b border-gray-100";
+                
+                const uniqueId = row.uniqueId || '';
+                const absenID = row.absenID || '';
+                const tanggalDisplay = row.tanggal || '';
+                const hariDisplay = row.hari || '';
+                const shiftDisplay = row.shift || '-';
+                const masukDisplay = row.masuk || '-';
+                const pulangDisplay = row.pulang || '';
+                const statusDisplay = row.status || '';
+                
+                // Tentukan apakah bisa absen pulang
+                let actionHtml = "";
+                if (statusDisplay === "Hadir" && (!pulangDisplay || pulangDisplay === "" || pulangDisplay === "-")) {
+                    const today = new Date();
+                    const todayStr = String(today.getDate()).padStart(2, '0') + '/' + 
+                                    String(today.getMonth() + 1).padStart(2, '0');
+                    
+                    // Hanya tampilkan tombol pulang untuk hari ini
+                    if (tanggalDisplay === todayStr || tanggalDisplay.includes(todayStr)) {
+                        actionHtml = `
+                            <button onclick="triggerPulangSpecific('${absenID}', '${tanggalDisplay}')" 
+                                class="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-2 py-1 rounded text-[10px] font-bold shadow hover:from-orange-600 hover:to-orange-700 active:scale-95 transition">
+                                <i class="fas fa-sign-out-alt mr-1"></i> Pulang
+                            </button>
+                        `;
+                    }
+                }
+
+                tr.innerHTML = `
+                    <td class="p-3 text-gray-500 text-[10px]">${tanggalDisplay}</td>
+                    <td class="p-3 text-gray-400 text-[10px]">${hariDisplay}</td>
+                    <td class="p-3">
+                        <span class="${getShiftBadgeClass(shiftDisplay)} text-[10px] px-2 py-1 rounded">
+                            ${getShiftShortName(shiftDisplay)}
+                        </span>
+                    </td>
+                    <td class="p-3 font-mono font-bold text-gray-700 text-[10px]">${masukDisplay}</td>
+                    <td class="p-3 font-mono text-gray-600 text-[10px]">${pulangDisplay || '-'}</td>
+                    <td class="p-3 text-center align-middle">
+                        ${actionHtml}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function triggerPulangSpecific(absenID, dateDisplay) {
+            if (!absenID) {
+                // Jika tidak ada absenID, gunakan metode baru
+                absenPulangToday();
+                return;
+            }
+            
+            const now = new Date();
+            const jamPulang = String(now.getHours()).padStart(2, '0') + ":" + 
+                            String(now.getMinutes()).padStart(2, '0');
+            
+            Swal.fire({
+                title: 'Absen Pulang?',
+                html: `
+                    <div class="text-left">
+                        <p>Konfirmasi absen pulang untuk:</p>
+                        <p><strong>Tanggal:</strong> ${dateDisplay}</p>
+                        <p><strong>Waktu:</strong> ${jamPulang}</p>
+                        <p class="text-xs text-gray-400 mt-2">Pastikan Anda sudah berada di luar area kerja.</p>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#f97316',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Absen Pulang',
+                cancelButtonText: 'Batal',
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    return new Promise((resolve, reject) => {
+                        const payload = {
+                            action: "ABSEN_PULANG_BY_ID",
+                            nama: currentUser,
+                            absenID: absenID,
+                            jamPulang: jamPulang
+                        };
+                        
+                        fetch(SCRIPT_URL, {
+                            method: "POST",
+                            body: JSON.stringify(payload)
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            resolve(data);
+                        })
+                        .catch(error => {
+                            reject(error);
+                        });
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const data = result.value;
+                    if(data.result === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            html: `
+                                <div class="text-center">
+                                    <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
+                                    <p>Absen pulang berhasil disimpan.</p>
+                                    <p class="text-sm font-bold mt-2">${data.message}</p>
+                                </div>
+                            `,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        
+                        setTimeout(() => {
+                            loadUserHistory();
+                            checkTodayStatus();
+                        }, 1000);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            html: `
+                                <div class="text-left">
+                                    <p>${data.message}</p>
+                                    <p class="text-xs text-gray-500 mt-2">Silakan coba lagi atau hubungi admin.</p>
+                                </div>
+                            `,
+                            confirmButtonColor: '#db2777'
+                        });
+                    }
+                }
+            });
         }
 
         // ========== SCHEDULE FUNCTIONS ==========
@@ -892,350 +1477,6 @@
                         nextDaysDiv.appendChild(dayDiv);
                     }
                 });
-            });
-        }
-
-        // ========== ABSENSI FUNCTIONS ==========
-        function submitAbsensi(statusType) {
-            // Validasi GPS untuk absen masuk
-            if (statusType === 'Hadir' && (!userLocation || !userLocation.lat)) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'GPS Tidak Aktif',
-                    text: 'Aktifkan GPS untuk absen masuk. Untuk izin/sakit, silakan isi alasan.',
-                    confirmButtonColor: '#db2777'
-                });
-                return;
-            }
-            
-            // Validasi lokasi untuk absen masuk
-            if (statusType === 'Hadir' && userLocation) {
-                const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
-                if (d > MAX_RADIUS_METER) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Di Luar Area',
-                        html: `
-                            <div class="text-left">
-                                <p>Anda berada di luar area klinik.</p>
-                                <p class="text-sm">Jarak: ${Math.round(d)} m (maks: ${MAX_RADIUS_METER} m)</p>
-                                <p class="text-xs text-gray-500 mt-2">Silakan mendekat ke klinik untuk absen.</p>
-                            </div>
-                        `,
-                        confirmButtonColor: '#db2777'
-                    });
-                    return;
-                }
-            }
-            
-            if (statusType !== 'Hadir') {
-                showReasonForm(statusType);
-            } else {
-                sendAbsenData(statusType, "");
-            }
-        }
-
-        function showReasonForm(statusType) {
-            Swal.fire({
-                title: `Form ${statusType}`,
-                html: `
-                    <div class="text-left">
-                        <p class="text-sm mb-2">Isikan alasan ${statusType.toLowerCase()}:</p>
-                        <textarea id="reasonInput" class="w-full p-2 border border-gray-300 rounded text-sm" 
-                            rows="3" placeholder="Contoh: ${statusType === 'Izin' ? 'Izin ke rumah sakit' : 'Sakit demam'}..."></textarea>
-                    </div>
-                `,
-                showCancelButton: true,
-                confirmButtonColor: '#db2777',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Kirim',
-                cancelButtonText: 'Batal',
-                preConfirm: () => {
-                    const reason = document.getElementById('reasonInput').value;
-                    if (!reason || reason.trim() === '') {
-                        Swal.showValidationMessage('Harap isi alasan');
-                        return false;
-                    }
-                    return reason;
-                }
-            }).then((res) => {
-                if (res.isConfirmed) {
-                    sendAbsenData(statusType, res.value);
-                }
-            });
-        }
-
-        function sendAbsenData(status, note) {
-            toggleLoading(true, `Menyimpan absensi ${status}...`);
-            
-            const now = new Date();
-            const timeStr = String(now.getHours()).padStart(2, '0') + ":" + 
-                          String(now.getMinutes()).padStart(2, '0');
-
-            const payload = {
-                action: "ABSEN_MASUK",
-                nama: currentUser,
-                lokasi: userLocation ? `${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}` : "No GPS",
-                jamMasuk: timeStr,
-                status: status,
-                keterangan: note
-            };
-
-            fetch(SCRIPT_URL, { 
-                method: "POST", 
-                body: JSON.stringify(payload) 
-            })
-            .then(res => res.json())
-            .then(data => {
-                toggleLoading(false);
-                
-                if (data.result === 'success') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Tersimpan!',
-                        html: `
-                            <div class="text-center">
-                                <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
-                                <p>${data.message}</p>
-                                <p class="text-sm font-bold mt-2">Jam: ${timeStr}</p>
-                                <p class="text-sm">Shift: ${data.shift}</p>
-                                ${data.rosterIndex !== undefined ? 
-                                    `<p class="text-xs text-gray-500">Roster: ${data.rosterIndex}</p>` : ''}
-                            </div>
-                        `,
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    
-                    // Refresh data
-                    setTimeout(() => {
-                        loadUserHistory();
-                        loadUserDashboard();
-                    }, 1000);
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: data.message || 'Terjadi kesalahan',
-                        confirmButtonColor: '#db2777'
-                    });
-                }
-            })
-            .catch(error => {
-                toggleLoading(false);
-                console.error("Error:", error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Koneksi Error',
-                    text: 'Gagal terhubung ke server. Periksa koneksi internet.',
-                    confirmButtonColor: '#db2777'
-                });
-            });
-        }
-
-        // ========== HISTORY FUNCTIONS ==========
-        function loadUserHistory() {
-            const tbody = document.getElementById('userHistoryBody');
-            tbody.innerHTML = `
-                <tr><td colspan="5" class="p-4 text-center text-gray-300">
-                    <div class="loader mx-auto w-6 h-6 border-2"></div>
-                    <p class="text-[10px] mt-2">Memuat riwayat...</p>
-                </td></tr>
-            `;
-
-            fetch(SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({ 
-                    action: "GET_USER_HISTORY", 
-                    nama: currentUser 
-                })
-            })
-            .then(res => res.json())
-            .then(resp => {
-                if(resp.result === 'success') {
-                    userHistoryData = resp.data;
-                    renderHistoryTable(resp.data);
-                    updateTodayStatus(resp.data);
-                }
-            })
-            .catch(error => {
-                console.error("Error loading history:", error);
-                tbody.innerHTML = `
-                    <tr><td colspan="5" class="p-4 text-center text-red-300">
-                        <i class="fas fa-wifi-slash text-lg mb-2"></i><br>
-                        Gagal terhubung ke server.
-                    </td></tr>`;
-            });
-        }
-
-        function renderHistoryTable(data) {
-            const tbody = document.getElementById('userHistoryBody');
-            tbody.innerHTML = "";
-            
-            if (data.length === 0) {
-                tbody.innerHTML = `
-                    <tr><td colspan="5" class="p-4 text-center text-gray-300 italic">
-                        <i class="fas fa-inbox text-lg mb-2"></i><br>
-                        Belum ada data absensi.
-                    </td></tr>`;
-                return;
-            }
-            
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-pink-50 transition group border-b border-gray-100";
-                
-                const uniqueId = row.uniqueId || '';
-                const tanggalDisplay = row.tanggal || '';
-                const hariDisplay = row.hari || '';
-                const shiftDisplay = row.shift || '-';
-                const masukDisplay = row.masuk || '-';
-                const pulangDisplay = row.pulang || '';
-                
-                let actionHtml = "";
-                if(row.status === "Hadir" && (!pulangDisplay || pulangDisplay === "" || pulangDisplay === "-")) {
-                    if (uniqueId) {
-                        actionHtml = `
-                            <button onclick="triggerPulangSpecific('${escapeString(uniqueId)}', '${escapeString(tanggalDisplay)}')" 
-                                class="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-2 py-1 rounded text-[10px] font-bold shadow hover:from-orange-600 hover:to-orange-700 active:scale-95 transition">
-                                <i class="fas fa-sign-out-alt mr-1"></i> Pulang
-                            </button>
-                        `;
-                    }
-                }
-
-                tr.innerHTML = `
-                    <td class="p-3 text-gray-500 text-[10px]">${tanggalDisplay}</td>
-                    <td class="p-3 text-gray-400 text-[10px]">${hariDisplay}</td>
-                    <td class="p-3">
-                        <span class="${getShiftBadgeClass(shiftDisplay)} text-[10px] px-2 py-1 rounded">
-                            ${getShiftShortName(shiftDisplay)}
-                        </span>
-                    </td>
-                    <td class="p-3 font-mono font-bold text-gray-700 text-[10px]">${masukDisplay}</td>
-                    <td class="p-3 text-center align-middle">
-                        ${pulangDisplay && pulangDisplay !== '-' ? 
-                            `<span class="font-mono text-gray-600 text-[10px]">${pulangDisplay}</span>` : 
-                            actionHtml}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function updateTodayStatus(historyData) {
-            const today = new Date();
-            const todayStr = String(today.getDate()).padStart(2, '0') + '/' + 
-                           String(today.getMonth() + 1).padStart(2, '0');
-            
-            const todayEntry = historyData.find(entry => entry.tanggal === todayStr);
-            const statusDiv = document.getElementById('todayStatus');
-            const statusText = document.getElementById('todayStatusText');
-            const statusTime = document.getElementById('todayStatusTime');
-            
-            if (todayEntry) {
-                statusDiv.classList.remove('hidden');
-                if (todayEntry.status === 'Hadir') {
-                    if (todayEntry.pulang && todayEntry.pulang !== '' && todayEntry.pulang !== '-') {
-                        statusText.innerHTML = `<span class="text-green-600">✓ Sudah absen pulang</span>`;
-                        statusTime.textContent = `Masuk: ${todayEntry.masuk} | Pulang: ${todayEntry.pulang}`;
-                    } else {
-                        statusText.innerHTML = `<span class="text-blue-600">✓ Sudah absen masuk</span>`;
-                        statusTime.textContent = `Jam masuk: ${todayEntry.masuk} | Silakan absen pulang nanti`;
-                    }
-                } else {
-                    statusText.innerHTML = `<span class="text-yellow-600">Status: ${todayEntry.status}</span>`;
-                    statusTime.textContent = `Catatan: ${todayEntry.keterangan || '-'}`;
-                }
-            } else {
-                statusDiv.classList.add('hidden');
-            }
-        }
-
-        function escapeString(str) {
-            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
-        }
-
-        function triggerPulangSpecific(timestampId, dateDisplay) {
-            Swal.fire({
-                title: 'Absen Pulang?',
-                html: `
-                    <div class="text-left">
-                        <p>Konfirmasi absen pulang untuk:</p>
-                        <p><strong>Tanggal:</strong> ${dateDisplay}</p>
-                        <p><strong>Waktu:</strong> ${new Date().toLocaleTimeString('id-ID')}</p>
-                        <p class="text-xs text-gray-400 mt-2">Pastikan Anda sudah berada di luar area kerja.</p>
-                    </div>
-                `,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#f97316',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Ya, Absen Pulang',
-                cancelButtonText: 'Batal',
-                showLoaderOnConfirm: true,
-                preConfirm: () => {
-                    return new Promise((resolve, reject) => {
-                        const now = new Date();
-                        const jamPulang = String(now.getHours()).padStart(2, '0') + ":" + 
-                                         String(now.getMinutes()).padStart(2, '0');
-                        
-                        const payload = {
-                            action: "ABSEN_PULANG_SPECIFIC",
-                            nama: currentUser,
-                            timestampId: timestampId,
-                            jamPulang: jamPulang
-                        };
-                        
-                        fetch(SCRIPT_URL, {
-                            method: "POST",
-                            body: JSON.stringify(payload)
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            resolve(data);
-                        })
-                        .catch(error => {
-                            reject(error);
-                        });
-                    });
-                },
-                allowOutsideClick: () => !Swal.isLoading()
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const data = result.value;
-                    if(data.result === 'success') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            html: `
-                                <div class="text-center">
-                                    <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
-                                    <p>Absen pulang berhasil disimpan.</p>
-                                    <p class="text-sm font-bold mt-2">${data.message}</p>
-                                </div>
-                            `,
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                        
-                        setTimeout(() => {
-                            loadUserHistory();
-                        }, 1000);
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            html: `
-                                <div class="text-left">
-                                    <p>${data.message}</p>
-                                    <p class="text-xs text-gray-500 mt-2">Silakan coba lagi atau hubungi admin.</p>
-                                </div>
-                            `,
-                            confirmButtonColor: '#db2777'
-                        });
-                    }
-                }
             });
         }
 
