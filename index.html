@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Absensi Klinik Nabilah - Enhanced Scheduling</title>
+    <title>Absensi Klinik Nabilah - Selfie Mode</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,6 +21,15 @@
                         shiftLiburNasional: '#dc2626',
                         shiftNon: '#f59e0b',
                         shiftLembur: '#7c3aed'
+                    },
+                    animation: {
+                        'scan': 'scan 1.5s linear infinite',
+                    },
+                    keyframes: {
+                        scan: {
+                            '0%': { top: '0%' },
+                            '100%': { top: '100%' },
+                        }
                     }
                 }
             }
@@ -34,9 +43,6 @@
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
-    <!-- Chart.js untuk grafik -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
         body { font-family: 'Quicksand', sans-serif; background-color: #fdf2f8; }
         .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.8); }
@@ -62,33 +68,29 @@
         .badge-non { background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
         .badge-lembur { background-color: #ede9fe; color: #5b21b6; border: 1px solid #a78bfa; }
         
-        /* Fade In Animation */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
         .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Camera & Selfie Styles */
+        #cameraContainer { position: relative; width: 100%; height: 300px; background: #000; border-radius: 1rem; overflow: hidden; }
+        #webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); } /* Mirror effect */
+        #photoCanvas { display: none; }
+        .scan-line { position: absolute; width: 100%; height: 2px; background: #db2777; box-shadow: 0 0 10px #db2777; z-index: 10; opacity: 0.8; }
     </style>
 </head>
-<body class="text-gray-800 h-screen flex flex-col items-center overflow-hidden bg-pink-50" onload="initApp()">
+<body class="text-gray-800 h-screen flex flex-col items-center overflow-hidden bg-pink-50">
 
     <!-- KONFIGURASI -->
     <script>
-        // URL Google Apps Script
+        // URL Google Apps Script (Sesuai file gs.js)
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOj9qLKIYWnRqDRRV1kuULYLuRhRfxwY5a4hV5JuJT_2wQIeDdl9kyYh28G-ECGbpv/exec"; 
         
         // Konfigurasi GPS
         const CLINIC_LAT = 1.3695652; 
         const CLINIC_LNG = 99.2735516; 
-        const MAX_RADIUS_METER = 20000;
+        const MAX_RADIUS_METER = 20000; // Radius toleransi
         
-        // Nama bulan Indonesia
-        const MONTH_NAMES = [
-            "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-            "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-        ];
-        
-        // Nama hari Indonesia
+        const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
         const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     </script>
 
@@ -111,7 +113,7 @@
                     <i class="fas fa-calendar-alt text-3xl text-pink-600"></i>
                 </div>
                 <h1 class="text-xl font-bold text-gray-800">Klinik Nabilah</h1>
-                <p class="text-xs text-pink-500 font-bold tracking-wider mb-2">SISTEM E-ABSENSI v5.1</p>
+                <p class="text-xs text-pink-500 font-bold tracking-wider mb-2">E-ABSENSI v5.2 (Selfie)</p>
                 <p class="text-[10px] text-gray-400 mb-4">Enhanced Scheduling System</p>
 
                 <div class="text-left space-y-4">
@@ -136,7 +138,7 @@
                         </div>
                     </div>
                     
-                    <button onclick="handleLogin()" class="w-full bg-gradient-to-r from-pink-600 to-pink-500 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all text-sm flex justify-center items-center gap-2">
+                    <button onclick="prepareLogin()" class="w-full bg-gradient-to-r from-pink-600 to-pink-500 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all text-sm flex justify-center items-center gap-2">
                         Masuk <i class="fas fa-arrow-right"></i>
                     </button>
                     
@@ -150,6 +152,34 @@
                     </div>
                 </div>
             </div>
+        </section>
+
+        <!-- PAGE 1.5: SELFIE CAMERA -->
+        <section id="selfiePage" class="flex-1 flex flex-col justify-center px-6 z-20 hidden bg-white">
+            <div class="text-center mb-4">
+                <h2 class="text-lg font-bold text-gray-800">Verifikasi Wajah</h2>
+                <p class="text-xs text-gray-500">Silakan ambil foto selfie untuk validasi</p>
+            </div>
+            
+            <div id="cameraContainer" class="shadow-lg mb-6 relative border-4 border-pink-100">
+                <video id="webcam" autoplay playsinline></video>
+                <canvas id="photoCanvas"></canvas>
+                <div id="scanLine" class="scan-line hidden animate-scan"></div>
+                <div id="faceFrame" class="absolute inset-0 border-2 border-white/50 rounded-lg m-8 pointer-events-none flex items-center justify-center">
+                    <div class="w-4 h-4 border-t-2 border-l-2 border-white absolute top-0 left-0 -mt-1 -ml-1"></div>
+                    <div class="w-4 h-4 border-t-2 border-r-2 border-white absolute top-0 right-0 -mt-1 -mr-1"></div>
+                    <div class="w-4 h-4 border-b-2 border-l-2 border-white absolute bottom-0 left-0 -mb-1 -ml-1"></div>
+                    <div class="w-4 h-4 border-b-2 border-r-2 border-white absolute bottom-0 right-0 -mb-1 -mr-1"></div>
+                </div>
+            </div>
+
+            <button onclick="takeSnapshot()" id="btnSnap" class="w-16 h-16 rounded-full bg-white border-4 border-pink-500 shadow-xl mx-auto flex items-center justify-center active:scale-90 transition">
+                <div class="w-12 h-12 rounded-full bg-pink-500"></div>
+            </button>
+            
+            <p id="camStatus" class="text-center text-[10px] text-gray-400 mt-4">Kamera aktif</p>
+            
+            <button onclick="cancelSelfie()" class="mt-6 text-xs text-gray-500 underline">Batal / Kembali</button>
         </section>
 
         <!-- PAGE 2: DASHBOARD USER -->
@@ -233,7 +263,6 @@
                         <button onclick="showScheduleView()" class="text-[10px] text-pink-500">Lihat Semua</button>
                     </div>
                     <div id="nextDaysSchedule" class="space-y-2">
-                        <!-- Diisi oleh JavaScript -->
                         <div class="text-center text-gray-300 text-xs py-4">
                             <i class="fas fa-spinner fa-spin mr-1"></i> Memuat jadwal...
                         </div>
@@ -290,7 +319,6 @@
             </div>
 
             <div class="flex-1 overflow-y-auto p-4">
-                <!-- Month Selector -->
                 <div class="bg-white p-3 rounded-xl shadow-sm mb-4 border border-gray-100">
                     <div class="flex items-center justify-between mb-2">
                         <button onclick="changeScheduleMonth(-1)" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
@@ -306,62 +334,7 @@
                         <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
                     </div>
                     
-                    <div id="scheduleCalendar" class="space-y-1">
-                        <!-- Calendar akan diisi oleh JavaScript -->
-                        <div class="text-center text-gray-300 py-8">
-                            <i class="fas fa-spinner fa-spin mr-1"></i> Memuat kalender...
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Schedule Summary -->
-                <div id="scheduleSummary" class="bg-gray-50 rounded-xl p-3 mb-4">
-                    <h4 class="font-bold text-xs text-gray-700 mb-2">Ringkasan Bulan Ini</h4>
-                    <div class="grid grid-cols-2 gap-2 text-[10px]">
-                        <div class="bg-white p-2 rounded border">
-                            <span class="font-bold text-green-600" id="totalWorkDays">0</span>
-                            <p class="text-gray-500">Hari Kerja</p>
-                        </div>
-                        <div class="bg-white p-2 rounded border">
-                            <span class="font-bold text-blue-600" id="totalPagi">0</span>
-                            <p class="text-gray-500">Shift Pagi</p>
-                        </div>
-                        <div class="bg-white p-2 rounded border">
-                            <span class="font-bold text-purple-600" id="totalSore">0</span>
-                            <p class="text-gray-500">Shift Sore</p>
-                        </div>
-                        <div class="bg-white p-2 rounded border">
-                            <span class="font-bold text-red-600" id="totalLibur">0</span>
-                            <p class="text-gray-500">Hari Libur</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Legend -->
-                <div class="bg-white rounded-xl p-3 border border-gray-100">
-                    <h4 class="font-bold text-xs text-gray-700 mb-2">Keterangan Warna</h4>
-                    <div class="space-y-1 text-[10px]">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-blue-100 border border-blue-300"></div>
-                            <span>Shift Pagi (08:00-17:00)</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-purple-100 border border-purple-300"></div>
-                            <span>Shift Sore (15:00-21:30)</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-green-100 border border-green-300"></div>
-                            <span>Jumat Full (08:00-17:00)</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-gray-100 border border-gray-300"></div>
-                            <span>Libur Biasa</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-red-100 border border-red-300"></div>
-                            <span>Libur Nasional</span>
-                        </div>
-                    </div>
+                    <div id="scheduleCalendar" class="space-y-1"></div>
                 </div>
             </div>
         </section>
@@ -377,7 +350,6 @@
             </div>
 
             <div class="flex-1 overflow-y-auto p-4">
-                <!-- Filter Controls -->
                 <div class="bg-white p-3 rounded-xl shadow-sm mb-3 space-y-2">
                     <div class="flex gap-2">
                         <input type="date" id="filterStartDate" class="w-1/2 text-[10px] p-2 bg-gray-50 rounded border border-gray-200">
@@ -398,23 +370,6 @@
                     </div>
                 </div>
 
-                <!-- Stats -->
-                <div class="grid grid-cols-3 gap-2 mb-3">
-                    <div class="bg-green-50 p-2 rounded-lg text-center border border-green-100">
-                        <span class="text-lg font-bold text-green-700" id="statHadir">0</span>
-                        <p class="text-[8px] text-green-500 uppercase">Hadir</p>
-                    </div>
-                    <div class="bg-red-50 p-2 rounded-lg text-center border border-red-100">
-                        <span class="text-lg font-bold text-red-700" id="statTelat">0</span>
-                        <p class="text-[8px] text-red-500 uppercase">Telat</p>
-                    </div>
-                    <div class="bg-yellow-50 p-2 rounded-lg text-center border border-yellow-100">
-                        <span class="text-lg font-bold text-yellow-700" id="statIzin">0</span>
-                        <p class="text-[8px] text-yellow-500 uppercase">Izin</p>
-                    </div>
-                </div>
-
-                <!-- Report Table -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-[10px] text-left">
@@ -428,30 +383,11 @@
                                     <th class="p-2">Status</th>
                                 </tr>
                             </thead>
-                            <tbody id="reportTableBody" class="divide-y divide-gray-100">
-                                <tr><td colspan="6" class="p-4 text-center text-gray-300">Tidak ada data...</td></tr>
-                            </tbody>
+                            <tbody id="reportTableBody" class="divide-y divide-gray-100"></tbody>
                         </table>
                     </div>
                 </div>
-
-                <!-- Admin Tools -->
-                <div class="mt-4 bg-white rounded-xl p-3 border border-gray-100">
-                    <h4 class="font-bold text-xs text-gray-700 mb-2">Tools Admin</h4>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="generateScheduleReport()" class="text-[10px] bg-blue-100 text-blue-700 p-2 rounded hover:bg-blue-200">
-                            <i class="fas fa-file-excel mr-1"></i> Export Jadwal
-                        </button>
-                        <button onclick="debugRosterSystem()" class="text-[10px] bg-yellow-100 text-yellow-700 p-2 rounded hover:bg-yellow-200">
-                            <i class="fas fa-bug mr-1"></i> Debug System
-                        </button>
-                    </div>
-                </div>
             </div>
-            
-            <button onclick="window.print()" class="absolute bottom-6 right-6 w-12 h-12 bg-gray-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-black">
-                <i class="fas fa-print"></i>
-            </button>
         </section>
 
     </div>
@@ -463,98 +399,65 @@
         let currentShift = null;
         let userLocation = null;
         let adminData = [];
-        let userHistoryData = [];
         let todayStatus = null;
+        let stream = null; // Untuk kamera
         
         // Untuk schedule view
         let scheduleCurrentMonth = new Date().getMonth() + 1;
         let scheduleCurrentYear = new Date().getFullYear();
-        let monthlyScheduleData = null;
 
         // ========== INITIALIZATION ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+        });
+
         function initApp() {
-            console.log("=== ABSENSI APP INITIALIZED ===");
-            console.log("Script URL:", SCRIPT_URL);
-            
-            // Set default filter dates
+            console.log("=== APP STARTED v5.2 Selfie (Fixed) ===");
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('filterStartDate').value = today;
             document.getElementById('filterEndDate').value = today;
-            
-            // Initialize GPS
             initializeGPS();
             
-            // Load shift info modal on login page
+            // Auto load info jika belum login
             setTimeout(() => {
-                if (!currentUser) {
-                    showScheduleInfo();
-                }
+                if (!currentUser) showScheduleInfo();
             }, 1000);
         }
 
         function initializeGPS() {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(updatePosition, errorPosition, {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                });
-                
-                navigator.geolocation.watchPosition(updatePosition, errorPosition, {
-                    enableHighAccuracy: true,
-                    maximumAge: 30000
-                });
+                navigator.geolocation.getCurrentPosition(updatePosition, errorPosition, { enableHighAccuracy: true });
+                navigator.geolocation.watchPosition(updatePosition, errorPosition, { enableHighAccuracy: true });
             } else {
-                document.getElementById('locationStatus').innerText = "GPS Tidak Support";
-                document.getElementById('gpsIndicator').className = "w-2 h-2 rounded-full bg-red-500 ml-2";
+                document.getElementById('locationStatus').innerText = "GPS Error";
             }
         }
 
-        // ========== GPS FUNCTIONS ==========
         function updatePosition(pos) {
             userLocation = { 
                 lat: pos.coords.latitude, 
-                lng: pos.coords.longitude,
-                accuracy: pos.coords.accuracy
+                lng: pos.coords.longitude, 
+                accuracy: pos.coords.accuracy 
             };
-            
             const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
-            const accuracyText = userLocation.accuracy > 50 ? ` (±${Math.round(userLocation.accuracy)}m)` : '';
             
-            document.getElementById('distanceStatus').innerText = `${Math.round(d)} m dari klinik${accuracyText}`;
             const gpsEl = document.getElementById('gpsIndicator');
             const locTxt = document.getElementById('locationStatus');
+            const distTxt = document.getElementById('distanceStatus');
+            
+            distTxt.innerText = `${Math.round(d)} m dari klinik`;
 
             if(d <= MAX_RADIUS_METER) {
                 gpsEl.className = "w-2 h-2 rounded-full bg-green-500 ml-2 pulse";
-                locTxt.innerHTML = `<i class="fas fa-check-circle mr-1"></i> Lokasi Valid`;
-                locTxt.className = "text-[10px] font-bold text-green-600";
+                locTxt.innerHTML = `<span class="text-green-600 font-bold">Lokasi Valid</span>`;
             } else {
                 gpsEl.className = "w-2 h-2 rounded-full bg-red-500 ml-2";
-                locTxt.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> Di Luar Area`;
-                locTxt.className = "text-[10px] font-bold text-red-600";
+                locTxt.innerHTML = `<span class="text-red-600 font-bold">Di Luar Area</span>`;
             }
         }
 
         function errorPosition(err) {
-            console.error("GPS Error:", err);
-            document.getElementById('locationStatus').innerHTML = `<i class="fas fa-exclamation-circle mr-1"></i> GPS Error`;
-            document.getElementById('locationStatus').className = "text-[10px] font-bold text-red-600";
-            document.getElementById('distanceStatus').innerText = "Aktifkan GPS dan berikan izin";
-            document.getElementById('gpsIndicator').className = "w-2 h-2 rounded-full bg-red-500 ml-2";
-        }
-
-        function requestLocation() {
-            document.getElementById('locationStatus').innerText = "Meminta lokasi...";
-            document.getElementById('distanceStatus').innerText = "Silakan izinkan akses GPS";
-            
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    updatePosition, 
-                    errorPosition, 
-                    { enableHighAccuracy: true, timeout: 10000 }
-                );
-            }
+            document.getElementById('locationStatus').innerText = "GPS Error / Denied";
         }
 
         function getDistance(lat1, lon1, lat2, lon2) {
@@ -563,29 +466,93 @@
             const φ2 = lat2 * Math.PI/180;
             const Δφ = (lat2-lat1) * Math.PI/180;
             const Δλ = (lon2-lon1) * Math.PI/180;
-            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                      Math.cos(φ1) * Math.cos(φ2) *
-                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        // ========== AUTH FUNCTIONS ==========
-        function handleLogin() {
+        // ========== LOGIN & CAMERA FLOW ==========
+        function prepareLogin() {
             const name = document.getElementById('selectNama').value;
             if (!name) {
-                Swal.fire({
-                    toast: true,
-                    position: 'top',
-                    icon: 'warning',
-                    title: 'Pilih nama dulu',
-                    showConfirmButton: false,
-                    timer: 1500
-                });
+                Swal.fire({ icon: 'warning', title: 'Pilih nama dulu', timer: 1500, showConfirmButton: false });
                 return;
             }
-
             currentUser = name;
+            startCameraFlow();
+        }
+
+        async function startCameraFlow() {
             document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('selfiePage').classList.remove('hidden');
+            document.getElementById('selfiePage').classList.add('flex');
+            
+            const video = document.getElementById('webcam');
+            const status = document.getElementById('camStatus');
+            
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+                video.srcObject = stream;
+                status.innerText = "Kamera aktif. Silakan senyum :)";
+            } catch (err) {
+                console.error("Camera Error:", err);
+                status.innerText = "Gagal akses kamera. Lewati...";
+                // Fallback jika kamera error
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Kamera Error',
+                    text: 'Tidak dapat mengakses kamera. Melanjutkan tanpa foto.',
+                    timer: 2000
+                }).then(() => {
+                    finishLogin();
+                });
+            }
+        }
+
+        function takeSnapshot() {
+            const video = document.getElementById('webcam');
+            const canvas = document.getElementById('photoCanvas');
+            const context = canvas.getContext('2d');
+            const scanLine = document.getElementById('scanLine');
+            const btn = document.getElementById('btnSnap');
+            const status = document.getElementById('camStatus');
+
+            // Set canvas size match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw video to canvas (Freeze frame effect)
+            context.translate(canvas.width, 0);
+            context.scale(-1, 1); // Mirror
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Pause video to show "captured" state
+            video.pause();
+            
+            // Visual feedback
+            scanLine.classList.remove('hidden');
+            btn.classList.add('hidden');
+            status.innerText = "Memverifikasi...";
+            
+            // Simulate processing
+            setTimeout(() => {
+                if(stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                finishLogin();
+            }, 1500);
+        }
+
+        function cancelSelfie() {
+            if(stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('selfiePage').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
+            currentUser = null;
+        }
+
+        function finishLogin() {
+            document.getElementById('selfiePage').classList.add('hidden');
             document.getElementById('userDashboard').classList.remove('hidden');
             document.getElementById('userDashboard').classList.add('flex');
             
@@ -593,52 +560,44 @@
             loadUserHistory();
             loadNextDaysSchedule();
             checkTodayStatus();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Login Berhasil',
+                text: 'Selamat bekerja!',
+                timer: 1500,
+                showConfirmButton: false
+            });
         }
 
         function logout() {
             Swal.fire({
                 title: 'Keluar?',
-                text: 'Apakah Anda yakin ingin keluar?',
+                text: 'Sesi anda akan berakhir',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#db2777',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Ya, Keluar',
+                confirmButtonText: 'Ya',
                 cancelButtonText: 'Batal'
             }).then((result) => {
-                if (result.isConfirmed) {
-                    location.reload();
-                }
+                if (result.isConfirmed) location.reload();
             });
         }
 
+        // ========== DASHBOARD LOGIC ==========
         function refreshUserData() {
             loadUserDashboard();
             loadUserHistory();
             loadNextDaysSchedule();
             checkTodayStatus();
             requestLocation();
-            
-            Swal.fire({
-                toast: true,
-                position: 'top',
-                icon: 'success',
-                title: 'Data diperbarui',
-                showConfirmButton: false,
-                timer: 1000
-            });
+            Swal.fire({ icon: 'success', title: 'Data diperbarui', toast: true, position: 'top', timer: 1000, showConfirmButton: false });
         }
 
-        // ========== TODAY STATUS FUNCTIONS ==========
         function checkTodayStatus() {
-            if (!currentUser) return;
-            
             fetch(SCRIPT_URL, {
                 method: "POST",
-                body: JSON.stringify({
-                    action: "GET_TODAY_STATUS",
-                    nama: currentUser
-                })
+                body: JSON.stringify({ action: "GET_TODAY_STATUS", nama: currentUser })
             })
             .then(res => res.json())
             .then(data => {
@@ -646,9 +605,6 @@
                     todayStatus = data.data;
                     updateTodayStatusBanner();
                 }
-            })
-            .catch(error => {
-                console.error("Error checking today status:", error);
             });
         }
 
@@ -656,1043 +612,290 @@
             const banner = document.getElementById('todayStatusBanner');
             const statusText = document.getElementById('todayStatusText');
             const statusDetails = document.getElementById('todayStatusDetails');
-            const shiftTime = document.getElementById('todayShiftTime');
-            const actionButtons = document.getElementById('todayActionButtons');
             const btnAbsenMasuk = document.getElementById('btnAbsenMasuk');
             
             if (!todayStatus || todayStatus.status === "Belum Absen") {
                 banner.classList.add('hidden');
                 btnAbsenMasuk.disabled = false;
-                btnAbsenMasuk.className = "col-span-1 bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-xl shadow-lg shadow-green-200 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24";
+                btnAbsenMasuk.classList.remove('bg-gray-300', 'cursor-not-allowed');
+                btnAbsenMasuk.classList.add('bg-gradient-to-br', 'from-green-500', 'to-green-600');
                 return;
             }
             
             banner.classList.remove('hidden');
+            btnAbsenMasuk.disabled = true;
+            btnAbsenMasuk.className = "col-span-1 bg-gray-300 text-gray-500 p-3 rounded-xl cursor-not-allowed flex flex-col items-center justify-center gap-1 h-24";
             
+            let actionHtml = '';
             if (todayStatus.status === "Hadir") {
                 if (todayStatus.sudah_pulang) {
-                    // Sudah absen pulang
-                    statusText.textContent = "✓ Sudah Absen Hari Ini";
-                    statusDetails.innerHTML = `Masuk: <strong>${todayStatus.jam_masuk}</strong> | Pulang: <strong>${todayStatus.jam_pulang}</strong>`;
-                    shiftTime.textContent = todayStatus.shift === "Sore" ? "15:00-21:30" : "08:00-17:00";
-                    
-                    actionButtons.innerHTML = `
-                        <button class="text-[10px] bg-white/20 px-3 py-1 rounded-full hover:bg-white/30">
-                            <i class="fas fa-check-circle mr-1"></i> Selesai
-                        </button>
-                    `;
-                    
-                    btnAbsenMasuk.disabled = true;
-                    btnAbsenMasuk.className = "col-span-1 bg-gray-300 text-gray-500 p-3 rounded-xl cursor-not-allowed flex flex-col items-center justify-center gap-1 h-24";
+                    statusText.textContent = "✓ Selesai Hari Ini";
+                    statusDetails.innerHTML = `Masuk: ${todayStatus.jam_masuk} | Pulang: ${todayStatus.jam_pulang}`;
                 } else {
-                    // Sudah absen masuk, belum pulang
-                    statusText.textContent = "✓ Sudah Absen Masuk";
-                    statusDetails.innerHTML = `Masuk: <strong>${todayStatus.jam_masuk}</strong> | Belum absen pulang`;
-                    shiftTime.textContent = todayStatus.shift === "Sore" ? "15:00-21:30" : "08:00-17:00";
-                    
-                    actionButtons.innerHTML = `
-                        <button onclick="absenPulangToday()" class="text-[10px] bg-white text-orange-600 px-3 py-1 rounded-full font-bold hover:bg-white/90">
-                            <i class="fas fa-sign-out-alt mr-1"></i> Absen Pulang Sekarang
-                        </button>
-                    `;
-                    
-                    btnAbsenMasuk.disabled = true;
-                    btnAbsenMasuk.className = "col-span-1 bg-gray-300 text-gray-500 p-3 rounded-xl cursor-not-allowed flex flex-col items-center justify-center gap-1 h-24";
+                    statusText.textContent = "✓ Sedang Bekerja";
+                    statusDetails.innerHTML = `Masuk: ${todayStatus.jam_masuk}`;
+                    actionHtml = `<button onclick="absenPulangToday()" class="text-[10px] bg-white text-orange-600 px-3 py-1 rounded-full font-bold">Absen Pulang</button>`;
                 }
-            } else if (todayStatus.status === "Izin" || todayStatus.status === "Sakit") {
-                // Sudah izin/sakit
-                statusText.textContent = `✓ ${todayStatus.status}`;
-                statusDetails.textContent = "Tidak perlu absen masuk/pulang";
-                shiftTime.textContent = "-";
-                
-                actionButtons.innerHTML = `
-                    <button class="text-[10px] bg-white/20 px-3 py-1 rounded-full hover:bg-white/30">
-                        <i class="fas fa-info-circle mr-1"></i> Sudah diizinkan
-                    </button>
-                `;
-                
-                btnAbsenMasuk.disabled = true;
-                btnAbsenMasuk.className = "col-span-1 bg-gray-300 text-gray-500 p-3 rounded-xl cursor-not-allowed flex flex-col items-center justify-center gap-1 h-24";
-            }
-        }
-
-        function absenPulangToday() {
-            if (!userLocation) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'GPS Tidak Aktif',
-                    text: 'Aktifkan GPS untuk absen pulang.',
-                    confirmButtonColor: '#db2777'
-                });
-                return;
-            }
-            
-            // Validasi lokasi
-            const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
-            if (d > MAX_RADIUS_METER) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Di Luar Area',
-                    html: `
-                        <div class="text-left">
-                            <p>Anda berada di luar area klinik.</p>
-                            <p class="text-sm">Jarak: ${Math.round(d)} m (maks: ${MAX_RADIUS_METER} m)</p>
-                            <p class="text-xs text-gray-500 mt-2">Absen pulang tetap bisa dilakukan.</p>
-                        </div>
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: 'Tetap Absen Pulang',
-                    cancelButtonText: 'Batal',
-                    confirmButtonColor: '#f97316'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        processAbsenPulang();
-                    }
-                });
             } else {
-                processAbsenPulang();
+                statusText.textContent = `✓ ${todayStatus.status}`;
+                statusDetails.innerHTML = "Tidak perlu absen";
             }
+            document.getElementById('todayActionButtons').innerHTML = actionHtml;
         }
 
-        function processAbsenPulang() {
-            const now = new Date();
-            const jamPulang = String(now.getHours()).padStart(2, '0') + ":" + 
-                            String(now.getMinutes()).padStart(2, '0');
-            
-            Swal.fire({
-                title: 'Absen Pulang?',
-                html: `
-                    <div class="text-left">
-                        <p>Konfirmasi absen pulang untuk:</p>
-                        <p><strong>Nama:</strong> ${currentUser}</p>
-                        <p><strong>Jam Pulang:</strong> ${jamPulang}</p>
-                        <p><strong>Lokasi:</strong> ${userLocation ? `${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}` : 'GPS tidak aktif'}</p>
-                        <p class="text-xs text-gray-400 mt-2">Pastikan Anda sudah menyelesaikan pekerjaan hari ini.</p>
-                    </div>
-                `,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#f97316',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Ya, Absen Pulang',
-                cancelButtonText: 'Batal',
-                showLoaderOnConfirm: true,
-                preConfirm: () => {
-                    return new Promise((resolve, reject) => {
-                        const payload = {
-                            action: "ABSEN_PULANG",
-                            nama: currentUser,
-                            jamPulang: jamPulang
-                        };
-                        
-                        console.log("📤 Mengirim absen pulang:", payload);
-                        
-                        fetch(SCRIPT_URL, {
-                            method: "POST",
-                            body: JSON.stringify(payload)
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            console.log("📥 Response absen pulang:", data);
-                            resolve(data);
-                        })
-                        .catch(error => {
-                            console.error("❌ Error absen pulang:", error);
-                            reject(error);
-                        });
-                    });
-                },
-                allowOutsideClick: () => !Swal.isLoading()
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const data = result.value;
-                    if(data.result === 'success') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            html: `
-                                <div class="text-center">
-                                    <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
-                                    <p>Absen pulang berhasil disimpan.</p>
-                                    <p class="text-sm font-bold mt-2">Jam: ${jamPulang}</p>
-                                    <p class="text-xs text-gray-500">Selamat beristirahat!</p>
-                                </div>
-                            `,
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                        
-                        // Update status
-                        setTimeout(() => {
-                            checkTodayStatus();
-                            loadUserHistory();
-                        }, 1000);
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            html: `
-                                <div class="text-left">
-                                    <p>${data.message}</p>
-                                    <p class="text-xs text-red-500 mt-2">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        ${data.message.includes('tidak ditemukan') ? 
-                                            'Pastikan Anda sudah absen masuk hari ini.' : 
-                                            'Silakan coba lagi atau hubungi admin.'}
-                                    </p>
-                                </div>
-                            `,
-                            confirmButtonColor: '#db2777'
-                        });
-                    }
-                }
-            });
-        }
-
-        // ========== USER DASHBOARD ==========
         function loadUserDashboard() {
             document.getElementById('userNameDisplay').innerText = currentUser;
-            
             const now = new Date();
-            const dayName = DAY_NAMES[now.getDay()];
-            const dateStr = `${dayName}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
-            document.getElementById('currentDateDisplay').innerText = dateStr;
-            
-            // Load shift info from server
-            toggleLoading(true, "Mengambil info shift...");
+            document.getElementById('currentDateDisplay').innerText = `${DAY_NAMES[now.getDay()]}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
             
             fetch(SCRIPT_URL, {
                 method: "POST",
-                body: JSON.stringify({
-                    action: "GET_SCHEDULE_INFO",
-                    nama: currentUser,
-                    date: now.toISOString().split('T')[0]
-                })
+                body: JSON.stringify({ action: "GET_SCHEDULE_INFO", nama: currentUser, date: now.toISOString().split('T')[0] })
             })
             .then(res => res.json())
             .then(data => {
-                toggleLoading(false);
-                
                 if (data.result === 'success') {
                     currentShift = data.user_shift;
-                    
-                    // Update shift info card
-                    const shiftInfoCard = document.getElementById('shiftInfoCard');
-                    const shiftRules = data.shift_rules;
                     const badgeClass = getShiftBadgeClass(currentShift);
-                    
-                    shiftInfoCard.innerHTML = `
+                    document.getElementById('shiftInfoCard').innerHTML = `
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wide">Jadwal Hari Ini</p>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">Jadwal Hari Ini</p>
                                 <h3 class="text-2xl font-bold text-gray-800 mt-1">${currentShift}</h3>
-                                <p class="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                    <i class="far fa-clock"></i> ${shiftRules.label}
-                                </p>
-                                ${data.is_holiday ? 
-                                    `<p class="text-[10px] text-red-500 mt-1 flex items-center gap-1">
-                                        <i class="fas fa-flag"></i> ${data.holiday_type}
-                                    </p>` : ''
-                                }
+                                <p class="text-xs text-gray-500 mt-1">${data.shift_rules.label}</p>
+                                ${data.is_holiday ? '<p class="text-[10px] text-red-500 mt-1"><i class="fas fa-flag"></i> Libur Nasional</p>' : ''}
                             </div>
-                            <div class="${badgeClass} px-3 py-2 rounded-lg font-bold text-xs">
-                                ${getShiftShortName(currentShift)}
-                            </div>
-                        </div>
-                        <div class="mt-3 pt-3 border-t border-gray-100">
-                            <p class="text-[10px] text-gray-500">Roster Index: <span class="font-bold">${data.roster_index}</span></p>
-                            <p class="text-[10px] text-gray-500">Pagi: ${data.schedule.pagi.join(', ') || '-'}</p>
-                            <p class="text-[10px] text-gray-500">Sore: ${data.schedule.sore.join(', ') || '-'}</p>
+                            <div class="${badgeClass} px-3 py-2 rounded-lg font-bold text-xs">${getShiftShortName(currentShift)}</div>
                         </div>
                     `;
                 }
-            })
-            .catch(error => {
-                toggleLoading(false);
-                console.error("Error loading schedule info:", error);
             });
         }
 
-        function getShiftBadgeClass(shiftType) {
-            switch(shiftType) {
-                case 'Pagi': return 'badge-pagi';
-                case 'Sore': return 'badge-sore';
-                case 'Jumat Full': return 'badge-jumat';
-                case 'Libur': return 'badge-libur';
-                case 'Libur Nasional': return 'badge-libur-nasional';
-                case 'Non-Shift': return 'badge-non';
-                case 'Lembur': return 'badge-lembur';
-                default: return 'badge-libur';
-            }
-        }
-
-        function getShiftShortName(shiftType) {
-            switch(shiftType) {
-                case 'Pagi': return 'PG';
-                case 'Sore': return 'SR';
-                case 'Jumat Full': return 'JF';
-                case 'Libur': return 'LB';
-                case 'Libur Nasional': return 'LN';
-                case 'Non-Shift': return 'NS';
-                case 'Lembur': return 'LM';
-                default: return shiftType.substring(0, 2).toUpperCase();
-            }
-        }
-
-        // ========== ABSENSI FUNCTIONS ==========
+        // ========== ABSENSI ACTIONS ==========
         function submitAbsensi(statusType) {
-            // Cek status hari ini dulu
-            if (todayStatus && todayStatus.status !== "Belum Absen") {
-                if (statusType === 'Hadir' && todayStatus.status === 'Hadir') {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Sudah Absen',
-                        text: 'Anda sudah absen masuk hari ini.',
-                        confirmButtonColor: '#db2777'
-                    });
-                    return;
-                }
-                
-                if ((statusType === 'Izin' || statusType === 'Sakit') && 
-                    (todayStatus.status === 'Izin' || todayStatus.status === 'Sakit')) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Sudah Diizinkan',
-                        text: `Anda sudah mengajukan ${todayStatus.status.toLowerCase()} hari ini.`,
-                        confirmButtonColor: '#db2777'
-                    });
-                    return;
-                }
-            }
-            
-            // Validasi GPS untuk absen masuk
             if (statusType === 'Hadir' && (!userLocation || !userLocation.lat)) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'GPS Tidak Aktif',
-                    text: 'Aktifkan GPS untuk absen masuk. Untuk izin/sakit, silakan isi alasan.',
-                    confirmButtonColor: '#db2777'
-                });
+                Swal.fire({ icon: 'warning', title: 'GPS Mati', text: 'Wajib aktifkan GPS' });
                 return;
             }
             
-            // Validasi lokasi untuk absen masuk
+            // Validasi jarak
             if (statusType === 'Hadir' && userLocation) {
                 const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
                 if (d > MAX_RADIUS_METER) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Di Luar Area',
-                        html: `
-                            <div class="text-left">
-                                <p>Anda berada di luar area klinik.</p>
-                                <p class="text-sm">Jarak: ${Math.round(d)} m (maks: ${MAX_RADIUS_METER} m)</p>
-                                <p class="text-xs text-gray-500 mt-2">Silakan mendekat ke klinik untuk absen.</p>
-                            </div>
-                        `,
-                        confirmButtonColor: '#db2777'
-                    });
+                    Swal.fire({ icon: 'error', title: 'Di Luar Area', text: `Jarak: ${Math.round(d)}m (Max: ${MAX_RADIUS_METER}m)` });
                     return;
                 }
             }
-            
+
             if (statusType !== 'Hadir') {
-                showReasonForm(statusType);
+                Swal.fire({
+                    title: `Alasan ${statusType}`,
+                    input: 'textarea',
+                    showCancelButton: true,
+                    confirmButtonText: 'Kirim',
+                    confirmButtonColor: '#db2777'
+                }).then((res) => {
+                    if (res.isConfirmed && res.value) sendAbsenData(statusType, res.value);
+                });
             } else {
                 sendAbsenData(statusType, "");
             }
         }
 
-        function showReasonForm(statusType) {
-            Swal.fire({
-                title: `Form ${statusType}`,
-                html: `
-                    <div class="text-left">
-                        <p class="text-sm mb-2">Isikan alasan ${statusType.toLowerCase()}:</p>
-                        <textarea id="reasonInput" class="w-full p-2 border border-gray-300 rounded text-sm" 
-                            rows="3" placeholder="Contoh: ${statusType === 'Izin' ? 'Izin ke rumah sakit' : 'Sakit demam'}..."></textarea>
-                    </div>
-                `,
-                showCancelButton: true,
-                confirmButtonColor: '#db2777',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Kirim',
-                cancelButtonText: 'Batal',
-                preConfirm: () => {
-                    const reason = document.getElementById('reasonInput').value;
-                    if (!reason || reason.trim() === '') {
-                        Swal.showValidationMessage('Harap isi alasan');
-                        return false;
-                    }
-                    return reason;
-                }
-            }).then((res) => {
-                if (res.isConfirmed) {
-                    sendAbsenData(statusType, res.value);
-                }
-            });
-        }
-
         function sendAbsenData(status, note) {
-            toggleLoading(true, `Menyimpan absensi ${status}...`);
-            
+            toggleLoading(true, "Mengirim Absensi...");
             const now = new Date();
-            const timeStr = String(now.getHours()).padStart(2, '0') + ":" + 
-                          String(now.getMinutes()).padStart(2, '0');
-
+            const timeStr = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+            
             const payload = {
                 action: "ABSEN_MASUK",
                 nama: currentUser,
-                lokasi: userLocation ? `${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}` : "No GPS",
+                lokasi: userLocation ? `${userLocation.lat},${userLocation.lng}` : "No GPS",
                 jamMasuk: timeStr,
                 status: status,
                 keterangan: note
             };
 
-            fetch(SCRIPT_URL, { 
-                method: "POST", 
-                body: JSON.stringify(payload) 
-            })
+            fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) })
             .then(res => res.json())
             .then(data => {
                 toggleLoading(false);
-                
                 if (data.result === 'success') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Tersimpan!',
-                        html: `
-                            <div class="text-center">
-                                <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
-                                <p>${data.message}</p>
-                                <p class="text-sm font-bold mt-2">Jam: ${timeStr}</p>
-                                <p class="text-sm">Shift: ${data.shift}</p>
-                                ${data.rosterIndex !== undefined ? 
-                                    `<p class="text-xs text-gray-500">Roster: ${data.rosterIndex}</p>` : ''}
-                            </div>
-                        `,
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    
-                    // Refresh data
-                    setTimeout(() => {
-                        checkTodayStatus();
-                        loadUserHistory();
-                        loadUserDashboard();
-                    }, 1000);
+                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, timer: 2000, showConfirmButton: false });
+                    refreshUserData();
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: data.message || 'Terjadi kesalahan',
-                        confirmButtonColor: '#db2777'
-                    });
+                    Swal.fire('Gagal', data.message, 'error');
                 }
             })
-            .catch(error => {
+            .catch(() => {
                 toggleLoading(false);
-                console.error("Error:", error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Koneksi Error',
-                    text: 'Gagal terhubung ke server. Periksa koneksi internet.',
-                    confirmButtonColor: '#db2777'
-                });
+                Swal.fire('Error', 'Gagal koneksi server', 'error');
             });
         }
 
-        // ========== HISTORY FUNCTIONS ==========
-        function loadUserHistory() {
-            const tbody = document.getElementById('userHistoryBody');
-            tbody.innerHTML = `
-                <tr><td colspan="6" class="p-4 text-center text-gray-300">
-                    <div class="loader mx-auto w-6 h-6 border-2"></div>
-                    <p class="text-[10px] mt-2">Memuat riwayat...</p>
-                </td></tr>
-            `;
-
-            fetch(SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({ 
-                    action: "GET_USER_HISTORY", 
-                    nama: currentUser 
-                })
-            })
-            .then(res => res.json())
-            .then(resp => {
-                if(resp.result === 'success') {
-                    userHistoryData = resp.data;
-                    renderHistoryTable(resp.data);
-                }
-            })
-            .catch(error => {
-                console.error("Error loading history:", error);
-                tbody.innerHTML = `
-                    <tr><td colspan="6" class="p-4 text-center text-red-300">
-                        <i class="fas fa-wifi-slash text-lg mb-2"></i><br>
-                        Gagal terhubung ke server.
-                    </td></tr>`;
-            });
-        }
-
-        function renderHistoryTable(data) {
-            const tbody = document.getElementById('userHistoryBody');
-            tbody.innerHTML = "";
-            
-            if (data.length === 0) {
-                tbody.innerHTML = `
-                    <tr><td colspan="6" class="p-4 text-center text-gray-300 italic">
-                        <i class="fas fa-inbox text-lg mb-2"></i><br>
-                        Belum ada data absensi.
-                    </td></tr>`;
-                return;
-            }
-            
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-pink-50 transition group border-b border-gray-100";
-                
-                const uniqueId = row.uniqueId || '';
-                const absenID = row.absenID || '';
-                const tanggalDisplay = row.tanggal || '';
-                const hariDisplay = row.hari || '';
-                const shiftDisplay = row.shift || '-';
-                const masukDisplay = row.masuk || '-';
-                const pulangDisplay = row.pulang || '';
-                const statusDisplay = row.status || '';
-                
-                // Tentukan apakah bisa absen pulang
-                let actionHtml = "";
-                if (statusDisplay === "Hadir" && (!pulangDisplay || pulangDisplay === "" || pulangDisplay === "-")) {
-                    const today = new Date();
-                    const todayStr = String(today.getDate()).padStart(2, '0') + '/' + 
-                                    String(today.getMonth() + 1).padStart(2, '0');
-                    
-                    // Hanya tampilkan tombol pulang untuk hari ini
-                    if (tanggalDisplay === todayStr || tanggalDisplay.includes(todayStr)) {
-                        actionHtml = `
-                            <button onclick="triggerPulangSpecific('${absenID}', '${tanggalDisplay}')" 
-                                class="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-2 py-1 rounded text-[10px] font-bold shadow hover:from-orange-600 hover:to-orange-700 active:scale-95 transition">
-                                <i class="fas fa-sign-out-alt mr-1"></i> Pulang
-                            </button>
-                        `;
-                    }
-                }
-
-                tr.innerHTML = `
-                    <td class="p-3 text-gray-500 text-[10px]">${tanggalDisplay}</td>
-                    <td class="p-3 text-gray-400 text-[10px]">${hariDisplay}</td>
-                    <td class="p-3">
-                        <span class="${getShiftBadgeClass(shiftDisplay)} text-[10px] px-2 py-1 rounded">
-                            ${getShiftShortName(shiftDisplay)}
-                        </span>
-                    </td>
-                    <td class="p-3 font-mono font-bold text-gray-700 text-[10px]">${masukDisplay}</td>
-                    <td class="p-3 font-mono text-gray-600 text-[10px]">${pulangDisplay || '-'}</td>
-                    <td class="p-3 text-center align-middle">
-                        ${actionHtml}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function triggerPulangSpecific(absenID, dateDisplay) {
-            if (!absenID) {
-                // Jika tidak ada absenID, gunakan metode baru
-                absenPulangToday();
-                return;
-            }
+        function absenPulangToday() {
+            if (!userLocation) { Swal.fire('GPS Error', 'Aktifkan GPS', 'warning'); return; }
             
             const now = new Date();
-            const jamPulang = String(now.getHours()).padStart(2, '0') + ":" + 
-                            String(now.getMinutes()).padStart(2, '0');
-            
+            const jamPulang = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+
             Swal.fire({
                 title: 'Absen Pulang?',
-                html: `
-                    <div class="text-left">
-                        <p>Konfirmasi absen pulang untuk:</p>
-                        <p><strong>Tanggal:</strong> ${dateDisplay}</p>
-                        <p><strong>Waktu:</strong> ${jamPulang}</p>
-                        <p class="text-xs text-gray-400 mt-2">Pastikan Anda sudah berada di luar area kerja.</p>
-                    </div>
-                `,
+                text: `Jam: ${jamPulang}`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#f97316',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Ya, Absen Pulang',
-                cancelButtonText: 'Batal',
-                showLoaderOnConfirm: true,
-                preConfirm: () => {
-                    return new Promise((resolve, reject) => {
-                        const payload = {
-                            action: "ABSEN_PULANG_BY_ID",
-                            nama: currentUser,
-                            absenID: absenID,
-                            jamPulang: jamPulang
-                        };
-                        
-                        fetch(SCRIPT_URL, {
-                            method: "POST",
-                            body: JSON.stringify(payload)
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            resolve(data);
-                        })
-                        .catch(error => {
-                            reject(error);
-                        });
-                    });
-                },
-                allowOutsideClick: () => !Swal.isLoading()
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const data = result.value;
-                    if(data.result === 'success') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            html: `
-                                <div class="text-center">
-                                    <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
-                                    <p>Absen pulang berhasil disimpan.</p>
-                                    <p class="text-sm font-bold mt-2">${data.message}</p>
-                                </div>
-                            `,
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                        
-                        setTimeout(() => {
-                            loadUserHistory();
-                            checkTodayStatus();
-                        }, 1000);
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            html: `
-                                <div class="text-left">
-                                    <p>${data.message}</p>
-                                    <p class="text-xs text-gray-500 mt-2">Silakan coba lagi atau hubungi admin.</p>
-                                </div>
-                            `,
-                            confirmButtonColor: '#db2777'
-                        });
-                    }
-                }
-            });
-        }
-
-        // ========== SCHEDULE FUNCTIONS ==========
-        function showScheduleView() {
-            document.getElementById('userDashboard').classList.add('hidden');
-            document.getElementById('scheduleView').classList.remove('hidden');
-            document.getElementById('scheduleView').classList.add('flex');
-            
-            document.getElementById('scheduleUserInfo').textContent = currentUser;
-            loadMonthlySchedule();
-        }
-
-        function hideScheduleView() {
-            document.getElementById('scheduleView').classList.add('hidden');
-            document.getElementById('userDashboard').classList.remove('hidden');
-            document.getElementById('userDashboard').classList.add('flex');
-        }
-
-        function loadMonthlySchedule() {
-            const monthTitle = `${MONTH_NAMES[scheduleCurrentMonth - 1]} ${scheduleCurrentYear}`;
-            document.getElementById('scheduleMonthTitle').textContent = monthTitle;
-            
-            toggleLoading(true, "Memuat jadwal bulanan...");
-            
-            fetch(SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({
-                    action: "GET_MONTHLY_SCHEDULE",
-                    nama: currentUser,
-                    year: scheduleCurrentYear,
-                    month: scheduleCurrentMonth
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                toggleLoading(false);
-                
-                if (data.result === 'success') {
-                    monthlyScheduleData = data;
-                    renderScheduleCalendar(data.schedule);
-                    updateScheduleSummary(data.summary);
-                }
-            })
-            .catch(error => {
-                toggleLoading(false);
-                console.error("Error loading monthly schedule:", error);
-            });
-        }
-
-        function changeScheduleMonth(delta) {
-            scheduleCurrentMonth += delta;
-            
-            if (scheduleCurrentMonth > 12) {
-                scheduleCurrentMonth = 1;
-                scheduleCurrentYear++;
-            } else if (scheduleCurrentMonth < 1) {
-                scheduleCurrentMonth = 12;
-                scheduleCurrentYear--;
-            }
-            
-            loadMonthlySchedule();
-        }
-
-        function renderScheduleCalendar(schedule) {
-            const calendarDiv = document.getElementById('scheduleCalendar');
-            calendarDiv.innerHTML = '';
-            
-            // Get first day of month
-            const firstDay = new Date(scheduleCurrentYear, scheduleCurrentMonth - 1, 1).getDay();
-            
-            // Add empty cells for days before the first day
-            for (let i = 0; i < firstDay; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.className = "h-10";
-                calendarDiv.appendChild(emptyCell);
-            }
-            
-            // Add days
-            schedule.forEach(day => {
-                const dayCell = document.createElement('div');
-                dayCell.className = "border border-gray-200 rounded p-1 h-10 cursor-pointer hover:bg-gray-50";
-                
-                const dayClass = getShiftBadgeClass(day.shift);
-                const today = new Date();
-                const isToday = today.getDate() === day.day && 
-                               today.getMonth() + 1 === scheduleCurrentMonth && 
-                               today.getFullYear() === scheduleCurrentYear;
-                
-                dayCell.innerHTML = `
-                    <div class="flex flex-col h-full">
-                        <div class="flex justify-between items-start">
-                            <span class="text-xs font-bold ${isToday ? 'text-pink-600' : 'text-gray-700'}">${day.day}</span>
-                            ${day.is_holiday ? 
-                                '<i class="fas fa-flag text-[8px] text-red-500"></i>' : 
-                                ''
-                            }
-                        </div>
-                        <div class="mt-auto">
-                            <span class="${dayClass} text-[8px] px-1 py-0.5 rounded font-bold">
-                                ${getShiftShortName(day.shift)}
-                            </span>
-                        </div>
-                    </div>
-                `;
-                
-                // Add click event to show day details
-                dayCell.onclick = () => showDayDetails(day);
-                
-                calendarDiv.appendChild(dayCell);
-            });
-        }
-
-        function updateScheduleSummary(summary) {
-            document.getElementById('totalWorkDays').textContent = summary.work_days;
-            document.getElementById('totalPagi').textContent = summary.pagi_shifts;
-            document.getElementById('totalSore').textContent = summary.sore_shifts;
-            document.getElementById('totalLibur').textContent = summary.off_days;
-        }
-
-        function showDayDetails(day) {
-            Swal.fire({
-                title: `${day.day_name}, ${day.day} ${MONTH_NAMES[scheduleCurrentMonth - 1]} ${scheduleCurrentYear}`,
-                html: `
-                    <div class="text-left text-sm">
-                        <p><strong>Status:</strong> <span class="${getShiftBadgeClass(day.shift)} px-2 py-1 rounded text-xs">${day.shift}</span></p>
-                        <p><strong>Jam:</strong> ${day.shift_info.label}</p>
-                        <p><strong>Roster Index:</strong> ${day.roster_index}</p>
-                        ${day.is_holiday ? '<p class="text-red-600"><i class="fas fa-flag mr-1"></i> Hari Libur Nasional</p>' : ''}
-                        <p class="text-xs text-gray-500 mt-3">Klik di luar untuk menutup</p>
-                    </div>
-                `,
-                showConfirmButton: false,
-                showCloseButton: true
-            });
-        }
-
-        function loadNextDaysSchedule() {
-            const nextDaysDiv = document.getElementById('nextDaysSchedule');
-            nextDaysDiv.innerHTML = '<div class="text-center text-gray-300 text-xs py-4"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat jadwal...</div>';
-            
-            const promises = [];
-            const today = new Date();
-            
-            // Get next 3 days
-            for (let i = 1; i <= 3; i++) {
-                const nextDay = new Date(today);
-                nextDay.setDate(today.getDate() + i);
-                const dateStr = nextDay.toISOString().split('T')[0];
-                
-                promises.push(
+                confirmButtonText: 'Ya'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    toggleLoading(true);
                     fetch(SCRIPT_URL, {
                         method: "POST",
-                        body: JSON.stringify({
-                            action: "GET_SCHEDULE_INFO",
-                            nama: currentUser,
-                            date: dateStr
-                        })
-                    }).then(res => res.json())
-                );
-            }
+                        body: JSON.stringify({ action: "ABSEN_PULANG", nama: currentUser, jamPulang: jamPulang })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        toggleLoading(false);
+                        if(data.result === 'success') {
+                            Swal.fire('Berhasil', 'Hati-hati di jalan!', 'success');
+                            refreshUserData();
+                        } else {
+                            Swal.fire('Gagal', data.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function triggerPulangSpecific(absenID) {
+            const now = new Date();
+            const jamPulang = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
             
-            Promise.all(promises).then(results => {
-                nextDaysDiv.innerHTML = '';
+            Swal.fire({
+                title: 'Pulang (Susulan)?',
+                text: 'Pastikan ini absensi yang benar',
+                showCancelButton: true,
+                confirmButtonColor: '#f97316',
+                confirmButtonText: 'Ya, Pulang'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    toggleLoading(true);
+                    fetch(SCRIPT_URL, {
+                        method: "POST",
+                        body: JSON.stringify({ 
+                            action: "ABSEN_PULANG_BY_ID", 
+                            nama: currentUser, 
+                            absenID: absenID,
+                            jamPulang: jamPulang 
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        toggleLoading(false);
+                        if(data.result === 'success') {
+                            Swal.fire('Sukses', 'Data terupdate', 'success');
+                            loadUserHistory();
+                        } else {
+                            Swal.fire('Gagal', data.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        // ========== HISTORY & UTILS ==========
+        function loadUserHistory() {
+            const tbody = document.getElementById('userHistoryBody');
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "GET_USER_HISTORY", nama: currentUser })
+            })
+            .then(res => res.json())
+            .then(resp => {
+                tbody.innerHTML = "";
+                if(!resp.data || resp.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-300">Belum ada data</td></tr>`;
+                    return;
+                }
                 
-                results.forEach((data, index) => {
-                    if (data.result === 'success') {
-                        const nextDay = new Date(today);
-                        nextDay.setDate(today.getDate() + index + 1);
-                        const dayName = DAY_NAMES[nextDay.getDay()];
-                        const dayNum = nextDay.getDate();
-                        const monthName = MONTH_NAMES[nextDay.getMonth()];
-                        
-                        const dayDiv = document.createElement('div');
-                        dayDiv.className = "bg-white border border-gray-100 rounded-lg p-3";
-                        
-                        dayDiv.innerHTML = `
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <p class="text-[10px] text-gray-400">${dayName}, ${dayNum} ${monthName}</p>
-                                    <p class="text-xs font-bold text-gray-700">${data.user_shift}</p>
-                                    <p class="text-[10px] text-gray-500">${data.shift_rules.label}</p>
-                                </div>
-                                <div class="${getShiftBadgeClass(data.user_shift)} px-3 py-1 rounded font-bold text-xs">
-                                    ${getShiftShortName(data.user_shift)}
-                                </div>
-                            </div>
-                        `;
-                        
-                        nextDaysDiv.appendChild(dayDiv);
+                // FIX DATE COMPARISON
+                const today = new Date();
+                const todayDDMM = String(today.getDate()).padStart(2, '0') + '/' + String(today.getMonth()+1).padStart(2,'0');
+
+                resp.data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-pink-50 border-b border-gray-100";
+                    
+                    // Logic tombol pulang berdasarkan gs.js
+                    let btnPulang = '';
+                    if (row.tanggal === todayDDMM && row.status === 'Hadir' && (!row.pulang || row.pulang === '-')) {
+                        btnPulang = `<button onclick="triggerPulangSpecific('${row.absenID}')" class="bg-orange-500 text-white px-2 py-1 rounded text-[10px]">Pulang</button>`;
                     }
+
+                    tr.innerHTML = `
+                        <td class="p-3 text-gray-500 text-[10px]">${row.tanggal}</td>
+                        <td class="p-3 text-gray-400 text-[10px]">${row.hari}</td>
+                        <td class="p-3"><span class="${getShiftBadgeClass(row.shift)} text-[10px] px-2 py-1 rounded">${getShiftShortName(row.shift)}</span></td>
+                        <td class="p-3 font-mono text-[10px]">${row.masuk}</td>
+                        <td class="p-3 font-mono text-[10px]">${row.pulang || '-'}</td>
+                        <td class="p-3 text-center">${btnPulang}</td>
+                    `;
+                    tbody.appendChild(tr);
                 });
             });
         }
 
-        // ========== ADMIN FUNCTIONS ==========
-        function showAdminLogin() {
-            Swal.fire({
-                title: 'Login Admin',
-                html: `
-                    <div class="text-left">
-                        <p class="text-sm mb-2">Masukkan password admin:</p>
-                        <input type="password" id="adminPassword" class="swal2-input" placeholder="Password">
-                    </div>
-                `,
-                confirmButtonColor: '#db2777',
-                showCancelButton: true,
-                cancelButtonText: 'Batal',
-                preConfirm: () => {
-                    const password = document.getElementById('adminPassword').value;
-                    if (password !== "112211") {
-                        Swal.showValidationMessage('Password salah');
-                        return false;
-                    }
-                    return true;
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    document.getElementById('loginPage').classList.add('hidden');
-                    document.getElementById('adminDashboard').classList.remove('hidden');
-                    document.getElementById('adminDashboard').classList.add('flex');
-                    loadAdminData();
-                }
-            });
-        }
-
-        function loadAdminData() {
-            toggleLoading(true, "Memuat data admin...");
+        // SEQUENTIAL FETCH (Fix Spam)
+        async function loadNextDaysSchedule() {
+            const div = document.getElementById('nextDaysSchedule');
+            div.innerHTML = '<div class="text-center text-xs py-2">Loading...</div>';
+            const today = new Date();
+            let html = '';
             
-            fetch(SCRIPT_URL, { 
-                method: "POST", 
-                body: JSON.stringify({ action: "GET_DATA" }) 
-            })
-            .then(res => res.json())
-            .then(resp => {
-                toggleLoading(false);
-                if (resp.result === 'success') {
-                    adminData = resp.data;
-                    document.getElementById('adminDataInfo').textContent = 
-                        `${resp.total} data ditemukan | ${new Date().toLocaleTimeString('id-ID')}`;
-                    renderAdminTable();
-                } else {
-                    Swal.fire('Error', resp.message || 'Gagal memuat data', 'error');
-                }
-            })
-            .catch(error => {
-                toggleLoading(false);
-                Swal.fire('Error', 'Gagal terhubung ke server', 'error');
-            });
-        }
-
-        function renderAdminTable() {
-            const startStr = document.getElementById('filterStartDate').value;
-            const endStr = document.getElementById('filterEndDate').value;
-            const nameFilter = document.getElementById('filterName').value;
-            
-            const sDate = startStr ? new Date(startStr) : null;
-            const eDate = endStr ? new Date(endStr) : null;
-            if (sDate) sDate.setHours(0,0,0,0);
-            if (eDate) eDate.setHours(0,0,0,0);
-
-            let h=0, t=0, i=0;
-            const tbody = document.getElementById('reportTableBody');
-            tbody.innerHTML = "";
-
-            const filtered = adminData.filter(row => {
-                const rDate = new Date(row.tanggal);
-                rDate.setHours(0,0,0,0);
-                if (sDate && rDate < sDate) return false;
-                if (eDate && rDate > eDate) return false;
-                if (nameFilter !== "All" && row.nama !== nameFilter) return false;
-                return true;
-            });
-
-            filtered.sort((a,b) => {
-                const dateA = new Date(a.timestamp || a.tanggal);
-                const dateB = new Date(b.timestamp || b.tanggal);
-                return dateB - dateA;
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `
-                    <tr><td colspan="6" class="p-4 text-center text-gray-300">
-                        <i class="fas fa-inbox text-lg mb-2"></i><br>
-                        Tidak ada data untuk filter ini.
-                    </td></tr>`;
-                document.getElementById('statHadir').innerText = "0";
-                document.getElementById('statTelat').innerText = "0";
-                document.getElementById('statIzin').innerText = "0";
-                return;
-            }
-
-            filtered.forEach(row => {
-                if (row.status === 'Hadir') h++;
-                if (parseInt(row.telat) > 0) t++;
-                if (['Sakit','Izin'].includes(row.status)) i++;
+            for(let i=1; i<=3; i++) {
+                const nextDate = new Date(today);
+                nextDate.setDate(today.getDate() + i);
+                const dateStr = nextDate.toISOString().split('T')[0];
                 
-                const tr = document.createElement('tr');
-                tr.className = "border-b border-gray-100 hover:bg-pink-50";
-                
-                let dateDisp = row.tanggal ? row.tanggal.split('-').reverse().slice(0,2).join('/') : '-';
-                let statusClass = row.status === 'Hadir' ? 
-                    (row.jam_pulang && row.jam_pulang !== '-' ? 'text-green-600' : 'text-blue-600') : 
-                    'text-yellow-600';
-                
-                const lateBadge = parseInt(row.telat) > 0 ? 
-                    `<span class="text-[8px] bg-red-100 text-red-700 px-1 py-0.5 rounded ml-1">+${row.telat}m</span>` : '';
-
-                tr.innerHTML = `
-                    <td class="p-2 text-gray-500 text-[9px]">${dateDisp}</td>
-                    <td class="p-2 font-bold text-gray-700 text-[9px]">${row.nama}</td>
-                    <td class="p-2 text-[9px]">
-                        <span class="${getShiftBadgeClass(row.shift)} px-2 py-0.5 rounded text-[8px]">
-                            ${getShiftShortName(row.shift)}
-                        </span>
-                    </td>
-                    <td class="p-2 font-mono text-gray-600 text-[9px]">${row.jam_masuk || '-'}${lateBadge}</td>
-                    <td class="p-2 font-mono text-gray-600 text-[9px]">${row.jam_pulang || '-'}</td>
-                    <td class="p-2 font-bold text-[9px] uppercase ${statusClass}">${row.status}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-            
-            document.getElementById('statHadir').innerText = h;
-            document.getElementById('statTelat').innerText = t;
-            document.getElementById('statIzin').innerText = i;
-        }
-
-        function generateScheduleReport() {
-            Swal.fire({
-                title: 'Generate Report?',
-                text: 'Laporan jadwal akan dibuat di Google Sheets',
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonColor: '#db2777',
-                confirmButtonText: 'Generate'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Note: This would need to be implemented on the backend
-                    Swal.fire('Info', 'Fitur ini memerlukan konfigurasi tambahan di backend', 'info');
-                }
-            });
-        }
-
-        function debugRosterSystem() {
-            toggleLoading(true, "Running debug...");
-            
-            fetch(SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({
-                    action: "DEBUG_ROSTER",
-                    date: new Date().toISOString().split('T')[0]
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                toggleLoading(false);
-                
-                if (data.result === 'success') {
-                    console.log("Debug Data:", data);
-                    
-                    let debugHtml = `
-                        <div class="text-left text-xs max-h-96 overflow-y-auto">
-                            <p><strong>Test Date:</strong> ${data.test_date}</p>
-                            <p><strong>Day:</strong> ${data.day_name}</p>
-                            <p><strong>Roster Index:</strong> ${data.roster_index}</p>
-                            <p><strong>Cycle Info:</strong> ${data.cycle_info.current_position}/${data.cycle_info.total_days}</p>
-                            <hr class="my-2">
-                            <p><strong>Schedule Today:</strong></p>
-                            <ul class="list-disc pl-4">
-                                <li>Pagi: ${data.schedule_today.p.join(', ') || '-'}</li>
-                                <li>Sore: ${data.schedule_today.s.join(', ') || '-'}</li>
-                                <li>Libur: ${data.schedule_today.l.join(', ') || '-'}</li>
-                            </ul>
-                            <hr class="my-2">
-                            <p><strong>All User Shifts:</strong></p>
-                            <pre class="bg-gray-100 p-2 rounded mt-1">${JSON.stringify(data.all_user_shifts, null, 2)}</pre>
-                        </div>
-                    `;
-                    
-                    Swal.fire({
-                        title: 'Debug Roster System',
-                        html: debugHtml,
-                        width: '80%',
-                        confirmButtonColor: '#db2777'
+                try {
+                    const res = await fetch(SCRIPT_URL, {
+                        method: "POST",
+                        body: JSON.stringify({ action: "GET_SCHEDULE_INFO", nama: currentUser, date: dateStr })
                     });
-                }
-            })
-            .catch(error => {
-                toggleLoading(false);
-                console.error("Debug error:", error);
-            });
-        }
-
-        // ========== UTILITY FUNCTIONS ==========
-        function toggleLoading(show, message = "Memproses Data...") {
-            const el = document.getElementById('loadingOverlay');
-            const textEl = document.getElementById('loadingText');
-            
-            textEl.textContent = message;
-            
-            if (show) {
-                el.classList.remove('hidden');
-            } else {
-                el.classList.add('hidden');
+                    const data = await res.json();
+                    if(data.result === 'success') {
+                        html += `
+                            <div class="bg-white border border-gray-100 rounded-lg p-3 mb-2 flex justify-between items-center">
+                                <div>
+                                    <p class="text-[10px] text-gray-400">${DAY_NAMES[nextDate.getDay()]}, ${nextDate.getDate()}</p>
+                                    <p class="text-xs font-bold">${data.user_shift}</p>
+                                </div>
+                                <div class="${getShiftBadgeClass(data.user_shift)} px-3 py-1 rounded font-bold text-xs">${getShiftShortName(data.user_shift)}</div>
+                            </div>
+                        `;
+                    }
+                } catch(e) { console.log("Skip date", dateStr); }
             }
+            div.innerHTML = html || '<p class="text-center text-xs">Gagal memuat</p>';
         }
 
+        // Helpers
+        function getShiftBadgeClass(s) {
+            if(s === 'Pagi') return 'badge-pagi';
+            if(s === 'Sore') return 'badge-sore';
+            if(s === 'Libur') return 'badge-libur';
+            if(s === 'Jumat Full') return 'badge-jumat';
+            return 'badge-non';
+        }
+        function getShiftShortName(s) { return s ? s.substring(0,2).toUpperCase() : '-'; }
+        function toggleLoading(show, msg="Loading...") {
+            const el = document.getElementById('loadingOverlay');
+            document.getElementById('loadingText').innerText = msg;
+            show ? el.classList.remove('hidden') : el.classList.add('hidden');
+        }
+
+        // --- FUNGSI YANG HILANG DIKEMBALIKAN (FIX ERROR) ---
         function showScheduleInfo() {
             const today = new Date();
             const todayStr = today.toISOString().split('T')[0];
@@ -1709,7 +912,6 @@
             .then(res => res.json())
             .then(data => {
                 toggleLoading(false);
-                
                 if (data.result === 'success') {
                     let infoHtml = `
                         <div class="text-left text-sm">
@@ -1743,11 +945,149 @@
                 Swal.fire('Error', 'Gagal memuat info sistem', 'error');
             });
         }
+        
+        function loadMonthlySchedule() {
+            const monthTitle = `${MONTH_NAMES[scheduleCurrentMonth - 1]} ${scheduleCurrentYear}`;
+            document.getElementById('scheduleMonthTitle').textContent = monthTitle;
+            toggleLoading(true, "Memuat jadwal bulanan...");
+            
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "GET_MONTHLY_SCHEDULE",
+                    nama: currentUser,
+                    year: scheduleCurrentYear,
+                    month: scheduleCurrentMonth
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                toggleLoading(false);
+                if (data.result === 'success') {
+                    renderScheduleCalendar(data.schedule);
+                }
+            });
+        }
+        
+        function changeScheduleMonth(delta) {
+            scheduleCurrentMonth += delta;
+            if (scheduleCurrentMonth > 12) {
+                scheduleCurrentMonth = 1;
+                scheduleCurrentYear++;
+            } else if (scheduleCurrentMonth < 1) {
+                scheduleCurrentMonth = 12;
+                scheduleCurrentYear--;
+            }
+            loadMonthlySchedule();
+        }
+        
+        function renderScheduleCalendar(schedule) {
+            const calendarDiv = document.getElementById('scheduleCalendar');
+            calendarDiv.innerHTML = '';
+            
+            const firstDay = new Date(scheduleCurrentYear, scheduleCurrentMonth - 1, 1).getDay();
+            
+            // Empty slots
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = "h-10";
+                calendarDiv.appendChild(emptyCell);
+            }
+            
+            // Days
+            schedule.forEach(day => {
+                const dayCell = document.createElement('div');
+                dayCell.className = "border border-gray-200 rounded p-1 h-10 cursor-pointer hover:bg-gray-50";
+                
+                const dayClass = getShiftBadgeClass(day.shift);
+                const isToday = new Date().getDate() === day.day && new Date().getMonth() + 1 === scheduleCurrentMonth;
+                
+                dayCell.innerHTML = `
+                    <div class="flex flex-col h-full">
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-bold ${isToday ? 'text-pink-600' : 'text-gray-700'}">${day.day}</span>
+                            ${day.is_holiday ? '<i class="fas fa-flag text-[8px] text-red-500"></i>' : ''}
+                        </div>
+                        <div class="mt-auto">
+                            <span class="${dayClass} text-[8px] px-1 py-0.5 rounded font-bold">${getShiftShortName(day.shift)}</span>
+                        </div>
+                    </div>
+                `;
+                dayCell.onclick = () => {
+                    Swal.fire({
+                        title: `${day.day_name}, ${day.day}`,
+                        text: `Shift: ${day.shift} (${day.shift_info.label})`,
+                        confirmButtonColor: '#db2777'
+                    });
+                };
+                calendarDiv.appendChild(dayCell);
+            });
+        }
 
-        // ========== INIT APP ON LOAD ==========
-        document.addEventListener('DOMContentLoaded', function() {
-            initApp();
-        });
+        // Admin (Simplified)
+        function showAdminLogin() {
+            Swal.fire({
+                title: 'Admin',
+                input: 'password',
+                showCancelButton: true,
+                confirmButtonColor: '#db2777'
+            }).then(r => {
+                if(r.value === '112211') {
+                    document.getElementById('loginPage').classList.add('hidden');
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    document.getElementById('adminDashboard').classList.add('flex');
+                    loadAdminData();
+                }
+            });
+        }
+
+        function loadAdminData() {
+            toggleLoading(true);
+            fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "GET_DATA" }) })
+            .then(r => r.json())
+            .then(d => {
+                toggleLoading(false);
+                if(d.result === 'success') {
+                    adminData = d.data;
+                    renderAdminTable();
+                }
+            });
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('reportTableBody');
+            tbody.innerHTML = '';
+            adminData.forEach(row => {
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-50 hover:bg-pink-50">
+                        <td class="p-2 text-[9px]">${row.tanggal}</td>
+                        <td class="p-2 text-[9px] font-bold">${row.nama}</td>
+                        <td class="p-2 text-[9px]"><span class="${getShiftBadgeClass(row.shift)} px-1 rounded">${getShiftShortName(row.shift)}</span></td>
+                        <td class="p-2 text-[9px]">${row.jam_masuk}</td>
+                        <td class="p-2 text-[9px]">${row.jam_pulang}</td>
+                        <td class="p-2 text-[9px]">${row.status}</td>
+                    </tr>
+                `;
+            });
+        }
+        
+        function showScheduleView() {
+            document.getElementById('userDashboard').classList.add('hidden');
+            document.getElementById('scheduleView').classList.remove('hidden');
+            document.getElementById('scheduleView').classList.add('flex');
+            document.getElementById('scheduleUserInfo').textContent = currentUser;
+            loadMonthlySchedule();
+        }
+        
+        function hideScheduleView() {
+            document.getElementById('scheduleView').classList.add('hidden');
+            document.getElementById('userDashboard').classList.remove('hidden');
+            document.getElementById('userDashboard').classList.add('flex');
+        }
+
+        function requestLocation() {
+            navigator.geolocation.getCurrentPosition(updatePosition, errorPosition);
+        }
     </script>
 </body>
 </html>
