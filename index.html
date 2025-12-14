@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Absensi Klinik Nabilah - Selfie Mode</title>
+    <title>Absensi Klinik Nabilah</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,15 +21,6 @@
                         shiftLiburNasional: '#dc2626',
                         shiftNon: '#f59e0b',
                         shiftLembur: '#7c3aed'
-                    },
-                    animation: {
-                        'scan': 'scan 1.5s linear infinite',
-                    },
-                    keyframes: {
-                        scan: {
-                            '0%': { top: '0%' },
-                            '100%': { top: '100%' },
-                        }
                     }
                 }
             }
@@ -70,25 +61,19 @@
         
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Camera & Selfie Styles */
-        #cameraContainer { position: relative; width: 100%; height: 300px; background: #000; border-radius: 1rem; overflow: hidden; }
-        #webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); } /* Mirror effect */
-        #photoCanvas { display: none; }
-        .scan-line { position: absolute; width: 100%; height: 2px; background: #db2777; box-shadow: 0 0 10px #db2777; z-index: 10; opacity: 0.8; }
     </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col items-center overflow-hidden bg-pink-50">
 
     <!-- KONFIGURASI -->
     <script>
-        // URL Google Apps Script (Sesuai file gs.js)
+        // GANTI URL INI DENGAN URL DEPLOYMENT BARU ANDA
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOj9qLKIYWnRqDRRV1kuULYLuRhRfxwY5a4hV5JuJT_2wQIeDdl9kyYh28G-ECGbpv/exec"; 
         
         // Konfigurasi GPS
         const CLINIC_LAT = 1.3695652; 
         const CLINIC_LNG = 99.2735516; 
-        const MAX_RADIUS_METER = 20000; // Radius toleransi
+        const MAX_RADIUS_METER = 20000; // Radius toleransi (tetap 20km sesuai permintaan)
         
         const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
         const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -110,11 +95,11 @@
         <section id="loginPage" class="flex-1 flex flex-col justify-center px-8 z-10">
             <div class="glass-panel p-6 rounded-2xl shadow-lg border-t-4 border-pink-400 text-center">
                 <div class="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-white shadow-sm">
-                    <i class="fas fa-calendar-alt text-3xl text-pink-600"></i>
+                    <i class="fas fa-hospital-user text-3xl text-pink-600"></i>
                 </div>
                 <h1 class="text-xl font-bold text-gray-800">Klinik Nabilah</h1>
-                <p class="text-xs text-pink-500 font-bold tracking-wider mb-2">E-ABSENSI v5.2 (Selfie)</p>
-                <p class="text-[10px] text-gray-400 mb-4">Enhanced Scheduling System</p>
+                <p class="text-xs text-pink-500 font-bold tracking-wider mb-2">E-ABSENSI (Simple Mode)</p>
+                <p class="text-[10px] text-gray-400 mb-4">Pilih nama untuk masuk</p>
 
                 <div class="text-left space-y-4">
                     <div>
@@ -138,8 +123,8 @@
                         </div>
                     </div>
                     
-                    <button onclick="prepareLogin()" class="w-full bg-gradient-to-r from-pink-600 to-pink-500 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all text-sm flex justify-center items-center gap-2">
-                        Masuk <i class="fas fa-arrow-right"></i>
+                    <button onclick="performLogin()" class="w-full bg-gradient-to-r from-pink-600 to-pink-500 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all text-sm flex justify-center items-center gap-2">
+                        Masuk Dashboard <i class="fas fa-arrow-right"></i>
                     </button>
                     
                     <div class="flex justify-between">
@@ -152,34 +137,6 @@
                     </div>
                 </div>
             </div>
-        </section>
-
-        <!-- PAGE 1.5: SELFIE CAMERA -->
-        <section id="selfiePage" class="flex-1 flex flex-col justify-center px-6 z-20 hidden bg-white">
-            <div class="text-center mb-4">
-                <h2 class="text-lg font-bold text-gray-800">Verifikasi Wajah</h2>
-                <p class="text-xs text-gray-500">Silakan ambil foto selfie untuk validasi</p>
-            </div>
-            
-            <div id="cameraContainer" class="shadow-lg mb-6 relative border-4 border-pink-100">
-                <video id="webcam" autoplay playsinline></video>
-                <canvas id="photoCanvas"></canvas>
-                <div id="scanLine" class="scan-line hidden animate-scan"></div>
-                <div id="faceFrame" class="absolute inset-0 border-2 border-white/50 rounded-lg m-8 pointer-events-none flex items-center justify-center">
-                    <div class="w-4 h-4 border-t-2 border-l-2 border-white absolute top-0 left-0 -mt-1 -ml-1"></div>
-                    <div class="w-4 h-4 border-t-2 border-r-2 border-white absolute top-0 right-0 -mt-1 -mr-1"></div>
-                    <div class="w-4 h-4 border-b-2 border-l-2 border-white absolute bottom-0 left-0 -mb-1 -ml-1"></div>
-                    <div class="w-4 h-4 border-b-2 border-r-2 border-white absolute bottom-0 right-0 -mb-1 -mr-1"></div>
-                </div>
-            </div>
-
-            <button onclick="takeSnapshot()" id="btnSnap" class="w-16 h-16 rounded-full bg-white border-4 border-pink-500 shadow-xl mx-auto flex items-center justify-center active:scale-90 transition">
-                <div class="w-12 h-12 rounded-full bg-pink-500"></div>
-            </button>
-            
-            <p id="camStatus" class="text-center text-[10px] text-gray-400 mt-4">Kamera aktif</p>
-            
-            <button onclick="cancelSelfie()" class="mt-6 text-xs text-gray-500 underline">Batal / Kembali</button>
         </section>
 
         <!-- PAGE 2: DASHBOARD USER -->
@@ -306,7 +263,7 @@
             </div>
         </section>
 
-        <!-- PAGE 3: SCHEDULE VIEW -->
+        <!-- PAGE 3: SCHEDULE VIEW (UPDATED TO TABLE) -->
         <section id="scheduleView" class="flex-1 flex flex-col hidden bg-white h-full overflow-hidden">
             <div class="bg-gradient-to-r from-pink-500 to-pink-600 p-4 shadow-sm flex justify-between items-center z-10 sticky top-0 text-white">
                 <div>
@@ -320,7 +277,7 @@
 
             <div class="flex-1 overflow-y-auto p-4">
                 <div class="bg-white p-3 rounded-xl shadow-sm mb-4 border border-gray-100">
-                    <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center justify-between mb-4">
                         <button onclick="changeScheduleMonth(-1)" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
                             <i class="fas fa-chevron-left text-gray-600"></i>
                         </button>
@@ -330,11 +287,21 @@
                         </button>
                     </div>
                     
-                    <div class="grid grid-cols-7 gap-1 text-center text-[9px] text-gray-500 font-bold mb-2">
-                        <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+                    <!-- TABLE VIEW FOR SCHEDULE -->
+                    <div class="overflow-hidden rounded-lg border border-gray-100">
+                        <table class="w-full text-left">
+                            <thead class="bg-pink-50 text-[10px] text-pink-700 font-bold uppercase">
+                                <tr>
+                                    <th class="p-3 text-center w-12">Tgl</th>
+                                    <th class="p-3">Hari</th>
+                                    <th class="p-3 text-right">Shift</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleTableBody" class="divide-y divide-gray-100 text-xs text-gray-600">
+                                <!-- Rows generated by JS -->
+                            </tbody>
+                        </table>
                     </div>
-                    
-                    <div id="scheduleCalendar" class="space-y-1"></div>
                 </div>
             </div>
         </section>
@@ -400,7 +367,6 @@
         let userLocation = null;
         let adminData = [];
         let todayStatus = null;
-        let stream = null; // Untuk kamera
         
         // Untuk schedule view
         let scheduleCurrentMonth = new Date().getMonth() + 1;
@@ -412,7 +378,7 @@
         });
 
         function initApp() {
-            console.log("=== APP STARTED v5.2 Selfie (Fixed) ===");
+            console.log("=== APP STARTED v5.3 (No Selfie) ===");
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('filterStartDate').value = today;
             document.getElementById('filterEndDate').value = today;
@@ -470,89 +436,17 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        // ========== LOGIN & CAMERA FLOW ==========
-        function prepareLogin() {
+        // ========== LOGIN FLOW (NO SELFIE) ==========
+        function performLogin() {
             const name = document.getElementById('selectNama').value;
             if (!name) {
                 Swal.fire({ icon: 'warning', title: 'Pilih nama dulu', timer: 1500, showConfirmButton: false });
                 return;
             }
             currentUser = name;
-            startCameraFlow();
-        }
-
-        async function startCameraFlow() {
+            
+            // Langsung masuk tanpa pop-up "Berhasil"
             document.getElementById('loginPage').classList.add('hidden');
-            document.getElementById('selfiePage').classList.remove('hidden');
-            document.getElementById('selfiePage').classList.add('flex');
-            
-            const video = document.getElementById('webcam');
-            const status = document.getElementById('camStatus');
-            
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-                video.srcObject = stream;
-                status.innerText = "Kamera aktif. Silakan senyum :)";
-            } catch (err) {
-                console.error("Camera Error:", err);
-                status.innerText = "Gagal akses kamera. Lewati...";
-                // Fallback jika kamera error
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Kamera Error',
-                    text: 'Tidak dapat mengakses kamera. Melanjutkan tanpa foto.',
-                    timer: 2000
-                }).then(() => {
-                    finishLogin();
-                });
-            }
-        }
-
-        function takeSnapshot() {
-            const video = document.getElementById('webcam');
-            const canvas = document.getElementById('photoCanvas');
-            const context = canvas.getContext('2d');
-            const scanLine = document.getElementById('scanLine');
-            const btn = document.getElementById('btnSnap');
-            const status = document.getElementById('camStatus');
-
-            // Set canvas size match video
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            
-            // Draw video to canvas (Freeze frame effect)
-            context.translate(canvas.width, 0);
-            context.scale(-1, 1); // Mirror
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Pause video to show "captured" state
-            video.pause();
-            
-            // Visual feedback
-            scanLine.classList.remove('hidden');
-            btn.classList.add('hidden');
-            status.innerText = "Memverifikasi...";
-            
-            // Simulate processing
-            setTimeout(() => {
-                if(stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                }
-                finishLogin();
-            }, 1500);
-        }
-
-        function cancelSelfie() {
-            if(stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-            document.getElementById('selfiePage').classList.add('hidden');
-            document.getElementById('loginPage').classList.remove('hidden');
-            currentUser = null;
-        }
-
-        function finishLogin() {
-            document.getElementById('selfiePage').classList.add('hidden');
             document.getElementById('userDashboard').classList.remove('hidden');
             document.getElementById('userDashboard').classList.add('flex');
             
@@ -561,13 +455,7 @@
             loadNextDaysSchedule();
             checkTodayStatus();
             
-            Swal.fire({
-                icon: 'success',
-                title: 'Login Berhasil',
-                text: 'Selamat bekerja!',
-                timer: 1500,
-                showConfirmButton: false
-            });
+            // Swal.fire removed as requested
         }
 
         function logout() {
@@ -679,7 +567,6 @@
                 return;
             }
             
-            // Validasi jarak
             if (statusType === 'Hadir' && userLocation) {
                 const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
                 if (d > MAX_RADIUS_METER) {
@@ -717,7 +604,10 @@
                 keterangan: note
             };
 
-            fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) })
+            fetch(SCRIPT_URL, { 
+                method: "POST", 
+                body: JSON.stringify(payload)
+            })
             .then(res => res.json())
             .then(data => {
                 toggleLoading(false);
@@ -728,9 +618,10 @@
                     Swal.fire('Gagal', data.message, 'error');
                 }
             })
-            .catch(() => {
+            .catch((err) => {
                 toggleLoading(false);
-                Swal.fire('Error', 'Gagal koneksi server', 'error');
+                console.error(err);
+                Swal.fire('Error', 'Gagal koneksi server. Coba lagi.', 'error');
             });
         }
 
@@ -763,6 +654,10 @@
                         } else {
                             Swal.fire('Gagal', data.message, 'error');
                         }
+                    })
+                    .catch(() => {
+                        toggleLoading(false);
+                        Swal.fire('Error', 'Gagal koneksi server.', 'error');
                     });
                 }
             });
@@ -819,7 +714,7 @@
                     return;
                 }
                 
-                // FIX DATE COMPARISON
+                // DATE CHECK FOR BUTTON DISPLAY
                 const today = new Date();
                 const todayDDMM = String(today.getDate()).padStart(2, '0') + '/' + String(today.getMonth()+1).padStart(2,'0');
 
@@ -827,10 +722,10 @@
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-pink-50 border-b border-gray-100";
                     
-                    // Logic tombol pulang berdasarkan gs.js
                     let btnPulang = '';
-                    if (row.tanggal === todayDDMM && row.status === 'Hadir' && (!row.pulang || row.pulang === '-')) {
-                        btnPulang = `<button onclick="triggerPulangSpecific('${row.absenID}')" class="bg-orange-500 text-white px-2 py-1 rounded text-[10px]">Pulang</button>`;
+                    // Logic tombol pulang lebih longgar: Jika status Hadir dan belum pulang, tampilkan tombol
+                    if (row.status === 'Hadir' && (!row.pulang || row.pulang === '-')) {
+                         btnPulang = `<button onclick="triggerPulangSpecific('${row.absenID}')" class="bg-orange-500 text-white px-2 py-1 rounded text-[10px]">Pulang</button>`;
                     }
 
                     tr.innerHTML = `
@@ -895,7 +790,7 @@
             show ? el.classList.remove('hidden') : el.classList.add('hidden');
         }
 
-        // --- FUNGSI YANG HILANG DIKEMBALIKAN (FIX ERROR) ---
+        // --- FUNGSI INFO & SCHEDULE ---
         function showScheduleInfo() {
             const today = new Date();
             const todayStr = today.toISOString().split('T')[0];
@@ -926,8 +821,6 @@
                                 <li><span class="badge-sore px-2 py-1 rounded text-xs">SR</span> Sore: ${data.schedule.sore.join(', ') || '-'}</li>
                                 <li><span class="badge-libur px-2 py-1 rounded text-xs">LB</span> Libur: ${data.schedule.libur.join(', ') || '-'}</li>
                             </ul>
-                            <hr class="my-2">
-                            <p class="text-xs text-gray-500">Sistem menggunakan siklus 35 hari dengan kalibrasi tanggal 1 Januari 2026.</p>
                         </div>
                     `;
                     
@@ -982,45 +875,41 @@
         }
         
         function renderScheduleCalendar(schedule) {
-            const calendarDiv = document.getElementById('scheduleCalendar');
-            calendarDiv.innerHTML = '';
+            const tableBody = document.getElementById('scheduleTableBody');
+            tableBody.innerHTML = '';
             
-            const firstDay = new Date(scheduleCurrentYear, scheduleCurrentMonth - 1, 1).getDay();
-            
-            // Empty slots
-            for (let i = 0; i < firstDay; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.className = "h-10";
-                calendarDiv.appendChild(emptyCell);
-            }
-            
-            // Days
+            // Generate rows for the table
             schedule.forEach(day => {
-                const dayCell = document.createElement('div');
-                dayCell.className = "border border-gray-200 rounded p-1 h-10 cursor-pointer hover:bg-gray-50";
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-pink-50 border-b border-gray-50";
                 
                 const dayClass = getShiftBadgeClass(day.shift);
                 const isToday = new Date().getDate() === day.day && new Date().getMonth() + 1 === scheduleCurrentMonth;
+                const dateStyle = isToday ? 'text-pink-600 font-bold bg-pink-100 rounded-full w-6 h-6 flex items-center justify-center mx-auto' : 'text-gray-700 font-bold text-center block';
                 
-                dayCell.innerHTML = `
-                    <div class="flex flex-col h-full">
-                        <div class="flex justify-between items-start">
-                            <span class="text-xs font-bold ${isToday ? 'text-pink-600' : 'text-gray-700'}">${day.day}</span>
-                            ${day.is_holiday ? '<i class="fas fa-flag text-[8px] text-red-500"></i>' : ''}
-                        </div>
-                        <div class="mt-auto">
-                            <span class="${dayClass} text-[8px] px-1 py-0.5 rounded font-bold">${getShiftShortName(day.shift)}</span>
-                        </div>
-                    </div>
+                tr.innerHTML = `
+                    <td class="p-3">
+                        <span class="${dateStyle}">${day.day}</span>
+                        ${day.is_holiday ? '<div class="text-[8px] text-red-500 text-center mt-1"><i class="fas fa-flag"></i></div>' : ''}
+                    </td>
+                    <td class="p-3">
+                        <div class="font-bold ${isToday ? 'text-pink-600' : 'text-gray-600'}">${day.day_name}</div>
+                        ${day.is_holiday ? '<div class="text-[9px] text-red-400">Libur Nasional</div>' : ''}
+                    </td>
+                    <td class="p-3 text-right">
+                        <span class="${dayClass} text-[10px] px-2 py-1 rounded font-bold inline-block min-w-[60px] text-center">${day.shift}</span>
+                    </td>
                 `;
-                dayCell.onclick = () => {
+                
+                tr.onclick = () => {
                     Swal.fire({
                         title: `${day.day_name}, ${day.day}`,
                         text: `Shift: ${day.shift} (${day.shift_info.label})`,
                         confirmButtonColor: '#db2777'
                     });
                 };
-                calendarDiv.appendChild(dayCell);
+                
+                tableBody.appendChild(tr);
             });
         }
 
