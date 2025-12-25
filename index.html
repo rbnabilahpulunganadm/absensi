@@ -7,6 +7,14 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PEMUTAR MUSIK -->
+    <script src="lagu.js"></script>
+
+    **Penjelasan Singkat Fitur:**
+    1.  **Random Start:** Setiap kali refresh, `Math.random()` memilih nomor lagu acak.
+    2.  **Sequential & Loop:** Fungsi `audio.addEventListener('ended', ...)` memastikan setelah lagu selesai, index bertambah (`currentIndex++`) dan memutar lagu selanjutnya. Jika sudah lagu ke-10, kembali ke lagu ke-1.
+    3.  **Smart Autoplay:** Jika browser memblokir suara saat refresh, musik akan otomatis mulai begitu pengguna mengklik tombol apa saja di aplikasi (misalnya saat memilih nama atau klik login).
+    4.  **Floating Button:** Ada tombol kecil bergambar speaker di pojok kiri bawah untuk mematikan/menghidupkan musik.
     <script>
         tailwind.config = {
             theme: {
