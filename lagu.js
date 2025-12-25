@@ -12,10 +12,12 @@
     // KONFIGURASI LAGU
     const playlist = [
         'lagu1.mp3', 'lagu2.mp3', 'lagu3.mp3', 'lagu4.mp3', 'lagu5.mp3',
-        'lagu6.mp3', 'lagu7.mp3', 'lagu8.mp3', 'lagu9.mp3', 'lagu10.mp3'
+        'lagu6.mp3', 'lagu7.mp3', 'lagu8.mp3', 'lagu9.mp3', 'lagu10.mp3',
+        'lagu11.mp3', 'lagu12.mp3', 'lagu13.mp3', 'lagu14.mp3', 'lagu15.mp3',
+        'lagu16.mp3', 'lagu17.mp3', 'lagu18.mp3', 'lagu19.mp3', 'lagu20.mp3'
     ];
 
-    // Mulai dari index acak (0 sampai 9)
+    // Mulai dari index acak (0 sampai 20)
     let currentIndex = Math.floor(Math.random() * playlist.length);
     
     // Inisialisasi Audio
