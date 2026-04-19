@@ -1,1 +1,985 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Absensi Klinik Nabilah</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PEMUTAR MUSIK -->
+    <script src="lagu.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#db2777',
+                        primaryLight: '#fce7f3',
+                        shiftPagi: '#3b82f6',
+                        shiftSore: '#8b5cf6',
+                        shiftJumat: '#059669',
+                        shiftLibur: '#6b7280',
+                        shiftLiburNasional: '#dc2626',
+                        shiftNon: '#f59e0b',
+                        shiftLembur: '#7c3aed'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome & Google Fonts -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #fdf2f8; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.8); }
+        
+        /* Spinner Loader */
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #db2777; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Mobile Scrollbar */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Animasi */
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        /* Shift Badge Colors */
+        .badge-pagi { background-color: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+        .badge-sore { background-color: #f3e8ff; color: #5b21b6; border: 1px solid #c4b5fd; }
+        .badge-jumat { background-color: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .badge-libur { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
+        .badge-libur-nasional { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .badge-non { background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+        .badge-lembur { background-color: #ede9fe; color: #5b21b6; border: 1px solid #a78bfa; }
+        
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="text-gray-800 h-screen flex flex-col items-center overflow-hidden bg-pink-50">
 
+    <!-- KONFIGURASI -->
+    <script>
+        // GANTI URL INI DENGAN URL DEPLOYMENT BARU ANDA
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOj9qLKIYWnRqDRRV1kuULYLuRhRfxwY5a4hV5JuJT_2wQIeDdl9kyYh28G-ECGbpv/exec"; 
+        
+        // Konfigurasi GPS
+        const CLINIC_LAT = 1.3695652; 
+        const CLINIC_LNG = 99.2735516; 
+        const MAX_RADIUS_METER = 20000; // Radius toleransi (tetap 20km sesuai permintaan)
+        
+        const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    </script>
+
+    <!-- LOADING SCREEN -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/90 z-[9999] flex flex-col items-center justify-center hidden">
+        <div class="loader mb-2 w-10 h-10 border-4"></div>
+        <p id="loadingText" class="text-xs font-bold text-pink-600 animate-pulse">Memproses Data...</p>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="w-full max-w-md h-full flex flex-col bg-white shadow-2xl relative overflow-hidden sm:rounded-xl sm:my-4 sm:h-[95vh]">
+        
+        <!-- Decoration Header -->
+        <div class="absolute top-0 w-full h-48 bg-gradient-to-b from-pink-500 to-pink-600 -z-0 rounded-b-[40px] shadow-lg"></div>
+
+        <!-- PAGE 1: LOGIN -->
+        <section id="loginPage" class="flex-1 flex flex-col justify-center px-8 z-10">
+            <div class="glass-panel p-6 rounded-2xl shadow-lg border-t-4 border-pink-400 text-center">
+                <div class="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-white shadow-sm">
+                    <i class="fas fa-hospital-user text-3xl text-pink-600"></i>
+                </div>
+                <h1 class="text-xl font-bold text-gray-800">Klinik Nabilah</h1>
+                <p class="text-xs text-pink-500 font-bold tracking-wider mb-2">E-ABSENSI (Simple Mode)</p>
+                <p class="text-[10px] text-gray-400 mb-4">Pilih nama untuk masuk</p>
+
+                <div class="text-left space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 ml-1 uppercase">Nama Anda</label>
+                        <div class="relative">
+                            <select id="selectNama" class="w-full p-3 pl-4 border border-gray-200 rounded-xl bg-white text-sm focus:ring-2 focus:ring-pink-500 outline-none appearance-none">
+                                <option value="">-- Pilih --</option>
+                                <optgroup label="Bidan (Shift)">
+                                    <option value="Riska">Riska</option>
+                                    <option value="Tri">Tri</option>
+                                    <option value="Desva">Desva</option>
+                                    <option value="Aisyah">Aisyah</option>
+                                    <option value="Rina">Rina</option>
+                                </optgroup>
+                                <optgroup label="Admin / Staff">
+                                    <option value="Dina">Dina</option>
+                                    <option value="Ropat">Ropat</option>
+                                </optgroup>
+                            </select>
+                            <i class="fas fa-chevron-down absolute right-4 top-4 text-gray-300 text-xs pointer-events-none"></i>
+                        </div>
+                    </div>
+                    
+                    <button onclick="performLogin()" class="w-full bg-gradient-to-r from-pink-600 to-pink-500 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all text-sm flex justify-center items-center gap-2">
+                        Masuk Dashboard <i class="fas fa-arrow-right"></i>
+                    </button>
+                    
+                    <div class="flex justify-between">
+                        <button onclick="showAdminLogin()" class="text-[10px] text-gray-400 py-2 hover:text-pink-600">
+                            <i class="fas fa-lock"></i> Login Admin
+                        </button>
+                        <button onclick="showScheduleInfo()" class="text-[10px] text-gray-400 py-2 hover:text-pink-600">
+                            <i class="fas fa-info-circle"></i> Info Jadwal
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 2: DASHBOARD USER -->
+        <section id="userDashboard" class="flex-1 flex flex-col hidden z-10 overflow-hidden">
+            <!-- Top Bar -->
+            <div class="px-6 pt-6 pb-2 flex justify-between items-center text-white">
+                <div>
+                    <p class="text-xs opacity-80">Selamat Datang,</p>
+                    <h2 class="text-xl font-bold" id="userNameDisplay">User</h2>
+                    <p class="text-[10px] bg-white/20 inline-block px-2 py-0.5 rounded-full mt-1" id="currentDateDisplay">...</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="showScheduleView()" class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/40" title="Lihat Jadwal">
+                        <i class="fas fa-calendar text-xs"></i>
+                    </button>
+                    <button onclick="refreshUserData()" class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/40" title="Refresh">
+                        <i class="fas fa-sync text-xs"></i>
+                    </button>
+                    <button onclick="logout()" class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/40" title="Keluar">
+                        <i class="fas fa-power-off text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto px-4 pb-6 hide-scroll">
+                
+                <!-- TODAY'S STATUS BANNER -->
+                <div id="todayStatusBanner" class="mb-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl p-3 shadow-lg fade-in hidden">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-[10px] opacity-80">Status Hari Ini</p>
+                            <p class="text-sm font-bold" id="todayStatusText">Belum absen</p>
+                            <p class="text-[10px] opacity-90" id="todayStatusDetails"></p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] opacity-80">Jam Kerja</p>
+                            <p class="text-sm font-bold" id="todayShiftTime">-</p>
+                        </div>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-white/20" id="todayActionButtons"></div>
+                </div>
+
+                <!-- SHIFT INFO CARD -->
+                <div class="bg-white rounded-2xl p-4 shadow-md mb-4 mt-2 border border-pink-50" id="shiftInfoCard">
+                    <!-- Konten akan diisi oleh JavaScript -->
+                </div>
+
+                <!-- GPS Status -->
+                <div class="flex items-center gap-2 mb-4 bg-white p-2 rounded-lg shadow-sm border border-gray-100">
+                    <div class="w-2 h-2 rounded-full bg-gray-300 ml-2" id="gpsIndicator"></div>
+                    <div class="flex-1">
+                        <p id="locationStatus" class="text-[10px] font-bold text-gray-700">Mencari Lokasi...</p>
+                        <p id="distanceStatus" class="text-[10px] text-gray-400 leading-none">Menunggu GPS...</p>
+                    </div>
+                    <button onclick="requestLocation()" class="text-[8px] bg-gray-100 px-2 py-1 rounded text-gray-500">Refresh</button>
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div class="grid grid-cols-3 gap-3 mb-5">
+                    <button onclick="submitAbsensi('Hadir')" id="btnAbsenMasuk" class="col-span-1 bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-xl shadow-lg shadow-green-200 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24">
+                        <i class="fas fa-fingerprint text-2xl"></i>
+                        <span class="text-xs font-bold leading-none mt-1">ABSEN<br>MASUK</span>
+                    </button>
+
+                    <button onclick="submitAbsensi('Izin')" class="col-span-1 bg-white border border-blue-100 p-3 rounded-xl shadow-sm active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24 text-blue-500 hover:bg-blue-50">
+                        <i class="fas fa-envelope-open-text text-xl"></i>
+                        <span class="text-xs font-bold">Izin</span>
+                    </button>
+
+                    <button onclick="submitAbsensi('Sakit')" class="col-span-1 bg-white border border-yellow-100 p-3 rounded-xl shadow-sm active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24 text-yellow-500 hover:bg-yellow-50">
+                        <i class="fas fa-procedures text-xl"></i>
+                        <span class="text-xs font-bold">Sakit</span>
+                    </button>
+                </div>
+
+                <!-- QUICK SCHEDULE PREVIEW -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-xs font-bold text-gray-600">Jadwal 3 Hari Berikutnya</h3>
+                        <button onclick="showScheduleView()" class="text-[10px] text-pink-500">Lihat Semua</button>
+                    </div>
+                    <div id="nextDaysSchedule" class="space-y-2">
+                        <div class="text-center text-gray-300 text-xs py-4">
+                            <i class="fas fa-spinner fa-spin mr-1"></i> Memuat jadwal...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HISTORY SECTION -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-2 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="font-bold text-xs text-gray-600">
+                            <i class="fas fa-history mr-1"></i> RIWAYAT ABSENSI
+                        </h3>
+                        <button onclick="loadUserHistory()" class="text-[10px] text-pink-500">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-white text-[10px] text-gray-400 font-bold uppercase border-b border-gray-100">
+                                <tr>
+                                    <th class="p-3">Tgl</th>
+                                    <th class="p-3">Hari</th>
+                                    <th class="p-3">Shift</th>
+                                    <th class="p-3">Masuk</th>
+                                    <th class="p-3">Pulang</th>
+                                    <th class="p-3">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userHistoryBody" class="text-xs text-gray-600 divide-y divide-gray-50">
+                                <tr><td colspan="6" class="p-4 text-center text-gray-300">
+                                    <div class="loader mx-auto w-6 h-6 border-2"></div>
+                                    <p class="text-[10px] mt-2">Memuat riwayat...</p>
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="h-10"></div>
+            </div>
+        </section>
+
+        <!-- PAGE 3: SCHEDULE VIEW (UPDATED TO TABLE) -->
+        <section id="scheduleView" class="flex-1 flex flex-col hidden bg-white h-full overflow-hidden">
+            <div class="bg-gradient-to-r from-pink-500 to-pink-600 p-4 shadow-sm flex justify-between items-center z-10 sticky top-0 text-white">
+                <div>
+                    <h2 class="font-bold">Jadwal Shift</h2>
+                    <p class="text-[10px] opacity-80" id="scheduleUserInfo">Loading...</p>
+                </div>
+                <button onclick="hideScheduleView()" class="text-xs bg-white/20 px-3 py-1 rounded-full hover:bg-white/30">
+                    <i class="fas fa-arrow-left mr-1"></i> Kembali
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4">
+                <div class="bg-white p-3 rounded-xl shadow-sm mb-4 border border-gray-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <button onclick="changeScheduleMonth(-1)" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
+                            <i class="fas fa-chevron-left text-gray-600"></i>
+                        </button>
+                        <h3 id="scheduleMonthTitle" class="font-bold text-gray-700 text-sm">Januari 2026</h3>
+                        <button onclick="changeScheduleMonth(1)" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
+                            <i class="fas fa-chevron-right text-gray-600"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- TABLE VIEW FOR SCHEDULE -->
+                    <div class="overflow-hidden rounded-lg border border-gray-100">
+                        <table class="w-full text-left">
+                            <thead class="bg-pink-50 text-[10px] text-pink-700 font-bold uppercase">
+                                <tr>
+                                    <th class="p-3 text-center w-12">Tgl</th>
+                                    <th class="p-3">Hari</th>
+                                    <th class="p-3 text-right">Shift</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleTableBody" class="divide-y divide-gray-100 text-xs text-gray-600">
+                                <!-- Rows generated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 4: ADMIN DASHBOARD -->
+        <section id="adminDashboard" class="flex-1 flex flex-col hidden bg-gray-50 h-full overflow-hidden">
+            <div class="bg-gradient-to-r from-pink-500 to-pink-600 p-4 shadow-sm flex justify-between items-center z-10 sticky top-0 text-white">
+                <div>
+                    <h2 class="font-bold">Laporan Admin</h2>
+                    <p class="text-[10px] opacity-80" id="adminDataInfo">Memuat data...</p>
+                </div>
+                <button onclick="logout()" class="text-xs bg-white/20 px-3 py-1 rounded-full hover:bg-white/30">Tutup</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4">
+                <div class="bg-white p-3 rounded-xl shadow-sm mb-3 space-y-2">
+                    <div class="flex gap-2">
+                        <input type="date" id="filterStartDate" class="w-1/2 text-[10px] p-2 bg-gray-50 rounded border border-gray-200">
+                        <input type="date" id="filterEndDate" class="w-1/2 text-[10px] p-2 bg-gray-50 rounded border border-gray-200">
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="filterName" class="flex-1 text-[10px] p-2 bg-gray-50 rounded border border-gray-200">
+                            <option value="All">Semua</option>
+                            <option value="Riska">Riska</option>
+                            <option value="Tri">Tri</option>
+                            <option value="Desva">Desva</option>
+                            <option value="Aisyah">Aisyah</option>
+                            <option value="Rina">Rina</option>
+                            <option value="Dina">Dina</option>
+                            <option value="Ropat">Ropat</option>
+                        </select>
+                        <button onclick="loadAdminData()" class="bg-pink-600 text-white px-3 rounded text-[10px] font-bold">CARI</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-[10px] text-left">
+                            <thead class="bg-pink-50 text-pink-700 uppercase font-bold">
+                                <tr>
+                                    <th class="p-2">Tanggal</th>
+                                    <th class="p-2">Nama</th>
+                                    <th class="p-2">Shift</th>
+                                    <th class="p-2">In</th>
+                                    <th class="p-2">Out</th>
+                                    <th class="p-2">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportTableBody" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- MAIN LOGIC -->
+    <script>
+        // ========== GLOBAL VARIABLES ==========
+        let currentUser = null;
+        let currentShift = null;
+        let userLocation = null;
+        let adminData = [];
+        let todayStatus = null;
+        
+        // Untuk schedule view
+        let scheduleCurrentMonth = new Date().getMonth() + 1;
+        let scheduleCurrentYear = new Date().getFullYear();
+
+        // ========== INITIALIZATION ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+        });
+
+        function initApp() {
+            console.log("=== APP STARTED v5.3 (No Selfie) ===");
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('filterStartDate').value = today;
+            document.getElementById('filterEndDate').value = today;
+            initializeGPS();
+            
+            // Auto load info jika belum login
+            setTimeout(() => {
+                if (!currentUser) showScheduleInfo();
+            }, 1000);
+        }
+
+        function initializeGPS() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(updatePosition, errorPosition, { enableHighAccuracy: true });
+                navigator.geolocation.watchPosition(updatePosition, errorPosition, { enableHighAccuracy: true });
+            } else {
+                document.getElementById('locationStatus').innerText = "GPS Error";
+            }
+        }
+
+        function updatePosition(pos) {
+            userLocation = { 
+                lat: pos.coords.latitude, 
+                lng: pos.coords.longitude, 
+                accuracy: pos.coords.accuracy 
+            };
+            const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
+            
+            const gpsEl = document.getElementById('gpsIndicator');
+            const locTxt = document.getElementById('locationStatus');
+            const distTxt = document.getElementById('distanceStatus');
+            
+            distTxt.innerText = `${Math.round(d)} m dari klinik`;
+
+            if(d <= MAX_RADIUS_METER) {
+                gpsEl.className = "w-2 h-2 rounded-full bg-green-500 ml-2 pulse";
+                locTxt.innerHTML = `<span class="text-green-600 font-bold">Lokasi Valid</span>`;
+            } else {
+                gpsEl.className = "w-2 h-2 rounded-full bg-red-500 ml-2";
+                locTxt.innerHTML = `<span class="text-red-600 font-bold">Di Luar Area</span>`;
+            }
+        }
+
+        function errorPosition(err) {
+            document.getElementById('locationStatus').innerText = "GPS Error / Denied";
+        }
+
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        // ========== LOGIN FLOW (NO SELFIE) ==========
+        function performLogin() {
+            const name = document.getElementById('selectNama').value;
+            if (!name) {
+                Swal.fire({ icon: 'warning', title: 'Pilih nama dulu', timer: 1500, showConfirmButton: false });
+                return;
+            }
+            currentUser = name;
+            
+            // Langsung masuk tanpa pop-up "Berhasil"
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('userDashboard').classList.remove('hidden');
+            document.getElementById('userDashboard').classList.add('flex');
+            
+            loadUserDashboard();
+            loadUserHistory();
+            loadNextDaysSchedule();
+            checkTodayStatus();
+            
+            // Swal.fire removed as requested
+        }
+
+        function logout() {
+            Swal.fire({
+                title: 'Keluar?',
+                text: 'Sesi anda akan berakhir',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#db2777',
+                confirmButtonText: 'Ya',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) location.reload();
+            });
+        }
+
+        // ========== DASHBOARD LOGIC ==========
+        function refreshUserData() {
+            loadUserDashboard();
+            loadUserHistory();
+            loadNextDaysSchedule();
+            checkTodayStatus();
+            requestLocation();
+            Swal.fire({ icon: 'success', title: 'Data diperbarui', toast: true, position: 'top', timer: 1000, showConfirmButton: false });
+        }
+
+        function checkTodayStatus() {
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "GET_TODAY_STATUS", nama: currentUser })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.result === 'success') {
+                    todayStatus = data.data;
+                    updateTodayStatusBanner();
+                }
+            });
+        }
+
+        function updateTodayStatusBanner() {
+            const banner = document.getElementById('todayStatusBanner');
+            const statusText = document.getElementById('todayStatusText');
+            const statusDetails = document.getElementById('todayStatusDetails');
+            const btnAbsenMasuk = document.getElementById('btnAbsenMasuk');
+            
+            if (!todayStatus || todayStatus.status === "Belum Absen") {
+                banner.classList.add('hidden');
+                btnAbsenMasuk.disabled = false;
+                btnAbsenMasuk.classList.remove('bg-gray-300', 'cursor-not-allowed');
+                btnAbsenMasuk.classList.add('bg-gradient-to-br', 'from-green-500', 'to-green-600');
+                return;
+            }
+            
+            banner.classList.remove('hidden');
+            btnAbsenMasuk.disabled = true;
+            btnAbsenMasuk.className = "col-span-1 bg-gray-300 text-gray-500 p-3 rounded-xl cursor-not-allowed flex flex-col items-center justify-center gap-1 h-24";
+            
+            let actionHtml = '';
+            if (todayStatus.status === "Hadir") {
+                if (todayStatus.sudah_pulang) {
+                    statusText.textContent = "✓ Selesai Hari Ini";
+                    statusDetails.innerHTML = `Masuk: ${todayStatus.jam_masuk} | Pulang: ${todayStatus.jam_pulang}`;
+                } else {
+                    statusText.textContent = "✓ Sedang Bekerja";
+                    statusDetails.innerHTML = `Masuk: ${todayStatus.jam_masuk}`;
+                    actionHtml = `<button onclick="absenPulangToday()" class="text-[10px] bg-white text-orange-600 px-3 py-1 rounded-full font-bold">Absen Pulang</button>`;
+                }
+            } else {
+                statusText.textContent = `✓ ${todayStatus.status}`;
+                statusDetails.innerHTML = "Tidak perlu absen";
+            }
+            document.getElementById('todayActionButtons').innerHTML = actionHtml;
+        }
+
+        function loadUserDashboard() {
+            document.getElementById('userNameDisplay').innerText = currentUser;
+            const now = new Date();
+            document.getElementById('currentDateDisplay').innerText = `${DAY_NAMES[now.getDay()]}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
+            
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "GET_SCHEDULE_INFO", nama: currentUser, date: now.toISOString().split('T')[0] })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.result === 'success') {
+                    currentShift = data.user_shift;
+                    const badgeClass = getShiftBadgeClass(currentShift);
+                    document.getElementById('shiftInfoCard').innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">Jadwal Hari Ini</p>
+                                <h3 class="text-2xl font-bold text-gray-800 mt-1">${currentShift}</h3>
+                                <p class="text-xs text-gray-500 mt-1">${data.shift_rules.label}</p>
+                                ${data.is_holiday ? '<p class="text-[10px] text-red-500 mt-1"><i class="fas fa-flag"></i> Libur Nasional</p>' : ''}
+                            </div>
+                            <div class="${badgeClass} px-3 py-2 rounded-lg font-bold text-xs">${getShiftShortName(currentShift)}</div>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        // ========== ABSENSI ACTIONS ==========
+        function submitAbsensi(statusType) {
+            if (statusType === 'Hadir' && (!userLocation || !userLocation.lat)) {
+                Swal.fire({ icon: 'warning', title: 'GPS Mati', text: 'Wajib aktifkan GPS' });
+                return;
+            }
+            
+            if (statusType === 'Hadir' && userLocation) {
+                const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
+                if (d > MAX_RADIUS_METER) {
+                    Swal.fire({ icon: 'error', title: 'Di Luar Area', text: `Jarak: ${Math.round(d)}m (Max: ${MAX_RADIUS_METER}m)` });
+                    return;
+                }
+            }
+
+            if (statusType !== 'Hadir') {
+                Swal.fire({
+                    title: `Alasan ${statusType}`,
+                    input: 'textarea',
+                    showCancelButton: true,
+                    confirmButtonText: 'Kirim',
+                    confirmButtonColor: '#db2777'
+                }).then((res) => {
+                    if (res.isConfirmed && res.value) sendAbsenData(statusType, res.value);
+                });
+            } else {
+                sendAbsenData(statusType, "");
+            }
+        }
+
+        function sendAbsenData(status, note) {
+            toggleLoading(true, "Mengirim Absensi...");
+            const now = new Date();
+            const timeStr = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+            
+            const payload = {
+                action: "ABSEN_MASUK",
+                nama: currentUser,
+                lokasi: userLocation ? `${userLocation.lat},${userLocation.lng}` : "No GPS",
+                jamMasuk: timeStr,
+                status: status,
+                keterangan: note
+            };
+
+            fetch(SCRIPT_URL, { 
+                method: "POST", 
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                toggleLoading(false);
+                if (data.result === 'success') {
+                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, timer: 2000, showConfirmButton: false });
+                    refreshUserData();
+                } else {
+                    Swal.fire('Gagal', data.message, 'error');
+                }
+            })
+            .catch((err) => {
+                toggleLoading(false);
+                console.error(err);
+                Swal.fire('Error', 'Gagal koneksi server. Coba lagi.', 'error');
+            });
+        }
+
+        function absenPulangToday() {
+            if (!userLocation) { Swal.fire('GPS Error', 'Aktifkan GPS', 'warning'); return; }
+            
+            const now = new Date();
+            const jamPulang = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+
+            Swal.fire({
+                title: 'Absen Pulang?',
+                text: `Jam: ${jamPulang}`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#f97316',
+                confirmButtonText: 'Ya'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    toggleLoading(true);
+                    fetch(SCRIPT_URL, {
+                        method: "POST",
+                        body: JSON.stringify({ action: "ABSEN_PULANG", nama: currentUser, jamPulang: jamPulang })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        toggleLoading(false);
+                        if(data.result === 'success') {
+                            Swal.fire('Berhasil', 'Hati-hati di jalan!', 'success');
+                            refreshUserData();
+                        } else {
+                            Swal.fire('Gagal', data.message, 'error');
+                        }
+                    })
+                    .catch(() => {
+                        toggleLoading(false);
+                        Swal.fire('Error', 'Gagal koneksi server.', 'error');
+                    });
+                }
+            });
+        }
+
+        function triggerPulangSpecific(absenID) {
+            const now = new Date();
+            const jamPulang = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+            
+            Swal.fire({
+                title: 'Pulang (Susulan)?',
+                text: 'Pastikan ini absensi yang benar',
+                showCancelButton: true,
+                confirmButtonColor: '#f97316',
+                confirmButtonText: 'Ya, Pulang'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    toggleLoading(true);
+                    fetch(SCRIPT_URL, {
+                        method: "POST",
+                        body: JSON.stringify({ 
+                            action: "ABSEN_PULANG_BY_ID", 
+                            nama: currentUser, 
+                            absenID: absenID,
+                            jamPulang: jamPulang 
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        toggleLoading(false);
+                        if(data.result === 'success') {
+                            Swal.fire('Sukses', 'Data terupdate', 'success');
+                            loadUserHistory();
+                        } else {
+                            Swal.fire('Gagal', data.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        // ========== HISTORY & UTILS ==========
+        function loadUserHistory() {
+            const tbody = document.getElementById('userHistoryBody');
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "GET_USER_HISTORY", nama: currentUser })
+            })
+            .then(res => res.json())
+            .then(resp => {
+                tbody.innerHTML = "";
+                if(!resp.data || resp.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-300">Belum ada data</td></tr>`;
+                    return;
+                }
+                
+                // DATE CHECK FOR BUTTON DISPLAY
+                const today = new Date();
+                const todayDDMM = String(today.getDate()).padStart(2, '0') + '/' + String(today.getMonth()+1).padStart(2,'0');
+
+                resp.data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-pink-50 border-b border-gray-100";
+                    
+                    let btnPulang = '';
+                    // Logic tombol pulang lebih longgar: Jika status Hadir dan belum pulang, tampilkan tombol
+                    if (row.status === 'Hadir' && (!row.pulang || row.pulang === '-')) {
+                         btnPulang = `<button onclick="triggerPulangSpecific('${row.absenID}')" class="bg-orange-500 text-white px-2 py-1 rounded text-[10px]">Pulang</button>`;
+                    }
+
+                    tr.innerHTML = `
+                        <td class="p-3 text-gray-500 text-[10px]">${row.tanggal}</td>
+                        <td class="p-3 text-gray-400 text-[10px]">${row.hari}</td>
+                        <td class="p-3"><span class="${getShiftBadgeClass(row.shift)} text-[10px] px-2 py-1 rounded">${getShiftShortName(row.shift)}</span></td>
+                        <td class="p-3 font-mono text-[10px]">${row.masuk}</td>
+                        <td class="p-3 font-mono text-[10px]">${row.pulang || '-'}</td>
+                        <td class="p-3 text-center">${btnPulang}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        // SEQUENTIAL FETCH (Fix Spam)
+        async function loadNextDaysSchedule() {
+            const div = document.getElementById('nextDaysSchedule');
+            div.innerHTML = '<div class="text-center text-xs py-2">Loading...</div>';
+            const today = new Date();
+            let html = '';
+            
+            for(let i=1; i<=3; i++) {
+                const nextDate = new Date(today);
+                nextDate.setDate(today.getDate() + i);
+                const dateStr = nextDate.toISOString().split('T')[0];
+                
+                try {
+                    const res = await fetch(SCRIPT_URL, {
+                        method: "POST",
+                        body: JSON.stringify({ action: "GET_SCHEDULE_INFO", nama: currentUser, date: dateStr })
+                    });
+                    const data = await res.json();
+                    if(data.result === 'success') {
+                        html += `
+                            <div class="bg-white border border-gray-100 rounded-lg p-3 mb-2 flex justify-between items-center">
+                                <div>
+                                    <p class="text-[10px] text-gray-400">${DAY_NAMES[nextDate.getDay()]}, ${nextDate.getDate()}</p>
+                                    <p class="text-xs font-bold">${data.user_shift}</p>
+                                </div>
+                                <div class="${getShiftBadgeClass(data.user_shift)} px-3 py-1 rounded font-bold text-xs">${getShiftShortName(data.user_shift)}</div>
+                            </div>
+                        `;
+                    }
+                } catch(e) { console.log("Skip date", dateStr); }
+            }
+            div.innerHTML = html || '<p class="text-center text-xs">Gagal memuat</p>';
+        }
+
+        // Helpers
+        function getShiftBadgeClass(s) {
+            if(s === 'Pagi') return 'badge-pagi';
+            if(s === 'Sore') return 'badge-sore';
+            if(s === 'Libur') return 'badge-libur';
+            if(s === 'Jumat Full') return 'badge-jumat';
+            return 'badge-non';
+        }
+        function getShiftShortName(s) { return s ? s.substring(0,2).toUpperCase() : '-'; }
+        function toggleLoading(show, msg="Loading...") {
+            const el = document.getElementById('loadingOverlay');
+            document.getElementById('loadingText').innerText = msg;
+            show ? el.classList.remove('hidden') : el.classList.add('hidden');
+        }
+
+        // --- FUNGSI INFO & SCHEDULE ---
+        function showScheduleInfo() {
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            
+            toggleLoading(true, "Mengambil info sistem...");
+            
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "GET_SCHEDULE_INFO",
+                    date: todayStr
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                toggleLoading(false);
+                if (data.result === 'success') {
+                    let infoHtml = `
+                        <div class="text-left text-sm">
+                            <p class="font-bold text-lg mb-2">Sistem Jadwal Shift 2026</p>
+                            <p><strong>Tanggal:</strong> ${data.date} (${data.day_name})</p>
+                            <p><strong>Status:</strong> ${data.is_holiday ? 'Libur Nasional' : 'Hari Kerja'}</p>
+                            <p><strong>Roster Index:</strong> ${data.roster_index}/35</p>
+                            <hr class="my-2">
+                            <p><strong>Jadwal Hari Ini:</strong></p>
+                            <ul class="list-disc pl-4">
+                                <li><span class="badge-pagi px-2 py-1 rounded text-xs">PG</span> Pagi: ${data.schedule.pagi.join(', ') || '-'}</li>
+                                <li><span class="badge-sore px-2 py-1 rounded text-xs">SR</span> Sore: ${data.schedule.sore.join(', ') || '-'}</li>
+                                <li><span class="badge-libur px-2 py-1 rounded text-xs">LB</span> Libur: ${data.schedule.libur.join(', ') || '-'}</li>
+                            </ul>
+                        </div>
+                    `;
+                    
+                    Swal.fire({
+                        title: 'Info Sistem Jadwal',
+                        html: infoHtml,
+                        width: '80%',
+                        confirmButtonColor: '#db2777',
+                        confirmButtonText: 'Mengerti'
+                    });
+                }
+            })
+            .catch(error => {
+                toggleLoading(false);
+                Swal.fire('Error', 'Gagal memuat info sistem', 'error');
+            });
+        }
+        
+        function loadMonthlySchedule() {
+            const monthTitle = `${MONTH_NAMES[scheduleCurrentMonth - 1]} ${scheduleCurrentYear}`;
+            document.getElementById('scheduleMonthTitle').textContent = monthTitle;
+            toggleLoading(true, "Memuat jadwal bulanan...");
+            
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "GET_MONTHLY_SCHEDULE",
+                    nama: currentUser,
+                    year: scheduleCurrentYear,
+                    month: scheduleCurrentMonth
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                toggleLoading(false);
+                if (data.result === 'success') {
+                    renderScheduleCalendar(data.schedule);
+                }
+            });
+        }
+        
+        function changeScheduleMonth(delta) {
+            scheduleCurrentMonth += delta;
+            if (scheduleCurrentMonth > 12) {
+                scheduleCurrentMonth = 1;
+                scheduleCurrentYear++;
+            } else if (scheduleCurrentMonth < 1) {
+                scheduleCurrentMonth = 12;
+                scheduleCurrentYear--;
+            }
+            loadMonthlySchedule();
+        }
+        
+        function renderScheduleCalendar(schedule) {
+            const tableBody = document.getElementById('scheduleTableBody');
+            tableBody.innerHTML = '';
+            
+            // Generate rows for the table
+            schedule.forEach(day => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-pink-50 border-b border-gray-50";
+                
+                const dayClass = getShiftBadgeClass(day.shift);
+                const isToday = new Date().getDate() === day.day && new Date().getMonth() + 1 === scheduleCurrentMonth;
+                const dateStyle = isToday ? 'text-pink-600 font-bold bg-pink-100 rounded-full w-6 h-6 flex items-center justify-center mx-auto' : 'text-gray-700 font-bold text-center block';
+                
+                tr.innerHTML = `
+                    <td class="p-3">
+                        <span class="${dateStyle}">${day.day}</span>
+                        ${day.is_holiday ? '<div class="text-[8px] text-red-500 text-center mt-1"><i class="fas fa-flag"></i></div>' : ''}
+                    </td>
+                    <td class="p-3">
+                        <div class="font-bold ${isToday ? 'text-pink-600' : 'text-gray-600'}">${day.day_name}</div>
+                        ${day.is_holiday ? '<div class="text-[9px] text-red-400">Libur Nasional</div>' : ''}
+                    </td>
+                    <td class="p-3 text-right">
+                        <span class="${dayClass} text-[10px] px-2 py-1 rounded font-bold inline-block min-w-[60px] text-center">${day.shift}</span>
+                    </td>
+                `;
+                
+                tr.onclick = () => {
+                    Swal.fire({
+                        title: `${day.day_name}, ${day.day}`,
+                        text: `Shift: ${day.shift} (${day.shift_info.label})`,
+                        confirmButtonColor: '#db2777'
+                    });
+                };
+                
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Admin (Simplified)
+        function showAdminLogin() {
+            Swal.fire({
+                title: 'Admin',
+                input: 'password',
+                showCancelButton: true,
+                confirmButtonColor: '#db2777'
+            }).then(r => {
+                if(r.value === '112211') {
+                    document.getElementById('loginPage').classList.add('hidden');
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    document.getElementById('adminDashboard').classList.add('flex');
+                    loadAdminData();
+                }
+            });
+        }
+
+        function loadAdminData() {
+            toggleLoading(true);
+            fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "GET_DATA" }) })
+            .then(r => r.json())
+            .then(d => {
+                toggleLoading(false);
+                if(d.result === 'success') {
+                    adminData = d.data;
+                    renderAdminTable();
+                }
+            });
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('reportTableBody');
+            tbody.innerHTML = '';
+            adminData.forEach(row => {
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-50 hover:bg-pink-50">
+                        <td class="p-2 text-[9px]">${row.tanggal}</td>
+                        <td class="p-2 text-[9px] font-bold">${row.nama}</td>
+                        <td class="p-2 text-[9px]"><span class="${getShiftBadgeClass(row.shift)} px-1 rounded">${getShiftShortName(row.shift)}</span></td>
+                        <td class="p-2 text-[9px]">${row.jam_masuk}</td>
+                        <td class="p-2 text-[9px]">${row.jam_pulang}</td>
+                        <td class="p-2 text-[9px]">${row.status}</td>
+                    </tr>
+                `;
+            });
+        }
+        
+        function showScheduleView() {
+            document.getElementById('userDashboard').classList.add('hidden');
+            document.getElementById('scheduleView').classList.remove('hidden');
+            document.getElementById('scheduleView').classList.add('flex');
+            document.getElementById('scheduleUserInfo').textContent = currentUser;
+            loadMonthlySchedule();
+        }
+        
+        function hideScheduleView() {
+            document.getElementById('scheduleView').classList.add('hidden');
+            document.getElementById('userDashboard').classList.remove('hidden');
+            document.getElementById('userDashboard').classList.add('flex');
+        }
+
+        function requestLocation() {
+            navigator.geolocation.getCurrentPosition(updatePosition, errorPosition);
+        }
+    </script>
+</body>
+</html>
