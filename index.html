@@ -70,13 +70,13 @@
 
     <!-- KONFIGURASI -->
     <script>
-        // GANTI URL INI DENGAN URL DEPLOYMENT BARU ANDA
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOj9qLKIYWnRqDRRV1kuULYLuRhRfxwY5a4hV5JuJT_2wQIeDdl9kyYh28G-ECGbpv/exec"; 
+        // GANTI URL INI DENGAN URL DEPLOYMENT BARU ANDA JIKA DEPLOY ULANG
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztVRsmMLBmZq-38ZCFAk4a5uygJyDl0QzdZFgQTRrsLrDi8Ce1p01xHL8Ztxj-KXSVMA/exec"; 
         
         // Konfigurasi GPS
         const CLINIC_LAT = 1.3695652; 
         const CLINIC_LNG = 99.2735516; 
-        const MAX_RADIUS_METER = 20000; // Radius toleransi (tetap 20km sesuai permintaan)
+        const MAX_RADIUS_METER = 20000; // Radius toleransi 20km
         
         const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
         const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -111,6 +111,7 @@
                             <select id="selectNama" class="w-full p-3 pl-4 border border-gray-200 rounded-xl bg-white text-sm focus:ring-2 focus:ring-pink-500 outline-none appearance-none">
                                 <option value="">-- Pilih --</option>
                                 <optgroup label="Bidan (Shift)">
+                                    <option value="Erlina">Erlina</option>
                                     <option value="Riska">Riska</option>
                                     <option value="Tri">Tri</option>
                                     <option value="Desva">Desva</option>
@@ -152,8 +153,8 @@
                     <p class="text-[10px] bg-white/20 inline-block px-2 py-0.5 rounded-full mt-1" id="currentDateDisplay">...</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="showScheduleView()" class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/40" title="Lihat Jadwal">
-                        <i class="fas fa-calendar text-xs"></i>
+                    <button onclick="showScheduleView()" class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/40" title="Lihat Jadwal & Rekan">
+                        <i class="fas fa-calendar-alt text-xs"></i>
                     </button>
                     <button onclick="refreshUserData()" class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/40" title="Refresh">
                         <i class="fas fa-sync text-xs"></i>
@@ -220,7 +221,7 @@
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="text-xs font-bold text-gray-600">Jadwal 3 Hari Berikutnya</h3>
-                        <button onclick="showScheduleView()" class="text-[10px] text-pink-500">Lihat Semua</button>
+                        <button onclick="showScheduleView()" class="text-[10px] text-pink-500">Lihat Full Bulan</button>
                     </div>
                     <div id="nextDaysSchedule" class="space-y-2">
                         <div class="text-center text-gray-300 text-xs py-4">
@@ -266,11 +267,11 @@
             </div>
         </section>
 
-        <!-- PAGE 3: SCHEDULE VIEW (UPDATED TO TABLE) -->
+        <!-- PAGE 3: SCHEDULE VIEW (UPDATED TO SHOW CO-WORKERS) -->
         <section id="scheduleView" class="flex-1 flex flex-col hidden bg-white h-full overflow-hidden">
             <div class="bg-gradient-to-r from-pink-500 to-pink-600 p-4 shadow-sm flex justify-between items-center z-10 sticky top-0 text-white">
                 <div>
-                    <h2 class="font-bold">Jadwal Shift</h2>
+                    <h2 class="font-bold">Kalender & Rekan Shift</h2>
                     <p class="text-[10px] opacity-80" id="scheduleUserInfo">Loading...</p>
                 </div>
                 <button onclick="hideScheduleView()" class="text-xs bg-white/20 px-3 py-1 rounded-full hover:bg-white/30">
@@ -290,14 +291,18 @@
                         </button>
                     </div>
                     
+                    <div class="text-[10px] text-gray-500 mb-2 italic">
+                        <i class="fas fa-info-circle text-pink-500"></i> Klik baris tanggal untuk melihat detail jadwal & rekan shift Anda.
+                    </div>
+
                     <!-- TABLE VIEW FOR SCHEDULE -->
                     <div class="overflow-hidden rounded-lg border border-gray-100">
                         <table class="w-full text-left">
                             <thead class="bg-pink-50 text-[10px] text-pink-700 font-bold uppercase">
                                 <tr>
                                     <th class="p-3 text-center w-12">Tgl</th>
-                                    <th class="p-3">Hari</th>
-                                    <th class="p-3 text-right">Shift</th>
+                                    <th class="p-3">Hari & Rekan Shift</th>
+                                    <th class="p-3 text-right">Shift Anda</th>
                                 </tr>
                             </thead>
                             <tbody id="scheduleTableBody" class="divide-y divide-gray-100 text-xs text-gray-600">
@@ -328,6 +333,7 @@
                     <div class="flex gap-2">
                         <select id="filterName" class="flex-1 text-[10px] p-2 bg-gray-50 rounded border border-gray-200">
                             <option value="All">Semua</option>
+                            <option value="Erlina">Erlina</option>
                             <option value="Riska">Riska</option>
                             <option value="Tri">Tri</option>
                             <option value="Desva">Desva</option>
@@ -381,7 +387,7 @@
         });
 
         function initApp() {
-            console.log("=== APP STARTED v5.3 (No Selfie) ===");
+            console.log("=== APP STARTED v6.0 (Erlina & Rekan Shift) ===");
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('filterStartDate').value = today;
             document.getElementById('filterEndDate').value = today;
@@ -457,8 +463,6 @@
             loadUserHistory();
             loadNextDaysSchedule();
             checkTodayStatus();
-            
-            // Swal.fire removed as requested
         }
 
         function logout() {
@@ -717,16 +721,11 @@
                     return;
                 }
                 
-                // DATE CHECK FOR BUTTON DISPLAY
-                const today = new Date();
-                const todayDDMM = String(today.getDate()).padStart(2, '0') + '/' + String(today.getMonth()+1).padStart(2,'0');
-
                 resp.data.forEach(row => {
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-pink-50 border-b border-gray-100";
                     
                     let btnPulang = '';
-                    // Logic tombol pulang lebih longgar: Jika status Hadir dan belum pulang, tampilkan tombol
                     if (row.status === 'Hadir' && (!row.pulang || row.pulang === '-')) {
                          btnPulang = `<button onclick="triggerPulangSpecific('${row.absenID}')" class="bg-orange-500 text-white px-2 py-1 rounded text-[10px]">Pulang</button>`;
                     }
@@ -744,7 +743,6 @@
             });
         }
 
-        // SEQUENTIAL FETCH (Fix Spam)
         async function loadNextDaysSchedule() {
             const div = document.getElementById('nextDaysSchedule');
             div.innerHTML = '<div class="text-center text-xs py-2">Loading...</div>';
@@ -813,16 +811,16 @@
                 if (data.result === 'success') {
                     let infoHtml = `
                         <div class="text-left text-sm">
-                            <p class="font-bold text-lg mb-2">Sistem Jadwal Shift 2026</p>
+                            <p class="font-bold text-lg mb-2">Sistem Jadwal Shift 42 Hari</p>
                             <p><strong>Tanggal:</strong> ${data.date} (${data.day_name})</p>
                             <p><strong>Status:</strong> ${data.is_holiday ? 'Libur Nasional' : 'Hari Kerja'}</p>
-                            <p><strong>Roster Index:</strong> ${data.roster_index}/35</p>
+                            <p><strong>Siklus Roster Hari Ke-:</strong> ${(data.roster_index + 1)} / 42</p>
                             <hr class="my-2">
-                            <p><strong>Jadwal Hari Ini:</strong></p>
-                            <ul class="list-disc pl-4">
-                                <li><span class="badge-pagi px-2 py-1 rounded text-xs">PG</span> Pagi: ${data.schedule.pagi.join(', ') || '-'}</li>
-                                <li><span class="badge-sore px-2 py-1 rounded text-xs">SR</span> Sore: ${data.schedule.sore.join(', ') || '-'}</li>
-                                <li><span class="badge-libur px-2 py-1 rounded text-xs">LB</span> Libur: ${data.schedule.libur.join(', ') || '-'}</li>
+                            <p><strong>Jadwal Keseluruhan Hari Ini:</strong></p>
+                            <ul class="list-disc pl-4 space-y-1 mt-2">
+                                <li><span class="badge-pagi px-2 py-0.5 rounded text-xs">PG</span> Pagi: ${data.schedule.pagi.length > 0 ? data.schedule.pagi.join(', ') : '-'}</li>
+                                <li><span class="badge-sore px-2 py-0.5 rounded text-xs">SR</span> Sore: ${data.schedule.sore.length > 0 ? data.schedule.sore.join(', ') : '-'}</li>
+                                <li><span class="badge-libur px-2 py-0.5 rounded text-xs">LB</span> Libur: ${data.schedule.libur.length > 0 ? data.schedule.libur.join(', ') : '-'}</li>
                             </ul>
                         </div>
                     `;
@@ -830,7 +828,7 @@
                     Swal.fire({
                         title: 'Info Sistem Jadwal',
                         html: infoHtml,
-                        width: '80%',
+                        width: '85%',
                         confirmButtonColor: '#db2777',
                         confirmButtonText: 'Mengerti'
                     });
@@ -881,33 +879,49 @@
             const tableBody = document.getElementById('scheduleTableBody');
             tableBody.innerHTML = '';
             
-            // Generate rows for the table
             schedule.forEach(day => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-pink-50 border-b border-gray-50";
+                tr.className = "hover:bg-pink-50 border-b border-gray-50 cursor-pointer transition-colors";
                 
                 const dayClass = getShiftBadgeClass(day.shift);
-                const isToday = new Date().getDate() === day.day && new Date().getMonth() + 1 === scheduleCurrentMonth;
+                const isToday = new Date().getDate() === day.day && new Date().getMonth() + 1 === scheduleCurrentMonth && new Date().getFullYear() === scheduleCurrentYear;
                 const dateStyle = isToday ? 'text-pink-600 font-bold bg-pink-100 rounded-full w-6 h-6 flex items-center justify-center mx-auto' : 'text-gray-700 font-bold text-center block';
                 
+                // Styling text rekan kerja
+                let coworkersHtml = '';
+                if (day.coworkers && day.coworkers.length > 0) {
+                    coworkersHtml = `<div class="text-[9px] text-gray-500 mt-1 leading-tight"><i class="fas fa-user-friends mr-1 text-gray-400"></i>${day.coworkers.join(', ')}</div>`;
+                } else if (day.shift !== "Libur Nasional" && day.shift !== "Non-Shift") {
+                     coworkersHtml = `<div class="text-[9px] text-gray-400 mt-1 italic">Kerja sendiri</div>`;
+                }
+
                 tr.innerHTML = `
-                    <td class="p-3">
+                    <td class="p-3 align-top">
                         <span class="${dateStyle}">${day.day}</span>
                         ${day.is_holiday ? '<div class="text-[8px] text-red-500 text-center mt-1"><i class="fas fa-flag"></i></div>' : ''}
                     </td>
-                    <td class="p-3">
+                    <td class="p-3 align-top">
                         <div class="font-bold ${isToday ? 'text-pink-600' : 'text-gray-600'}">${day.day_name}</div>
-                        ${day.is_holiday ? '<div class="text-[9px] text-red-400">Libur Nasional</div>' : ''}
+                        ${day.is_holiday ? `<div class="text-[9px] font-bold text-red-500">${day.shift_info.label || 'Libur Nasional'}</div>` : coworkersHtml}
                     </td>
-                    <td class="p-3 text-right">
-                        <span class="${dayClass} text-[10px] px-2 py-1 rounded font-bold inline-block min-w-[60px] text-center">${day.shift}</span>
+                    <td class="p-3 text-right align-top">
+                        <span class="${dayClass} text-[10px] px-2 py-1 rounded font-bold inline-block min-w-[60px] text-center shadow-sm">${day.shift}</span>
                     </td>
                 `;
                 
                 tr.onclick = () => {
+                    let textMsg = `Shift Anda: ${day.shift} (${day.shift_info.label})`;
+                    if(day.coworkers && day.coworkers.length > 0) {
+                        textMsg += `\n\n👩‍⚕️ Rekan shift yang sama:\n${day.coworkers.join(', ')}`;
+                    } else if (day.shift !== "Libur Nasional" && day.shift !== "Non-Shift") {
+                        textMsg += `\n\n👩‍⚕️ Anda bekerja sendiri di shift ini.`;
+                    } else if (day.shift === "Libur" && day.coworkers && day.coworkers.length > 0){
+                        textMsg += `\n\n🏖️ Yang libur juga hari ini:\n${day.coworkers.join(', ')}`;
+                    }
+
                     Swal.fire({
-                        title: `${day.day_name}, ${day.day}`,
-                        text: `Shift: ${day.shift} (${day.shift_info.label})`,
+                        title: `${day.day_name}, ${day.day} ${MONTH_NAMES[scheduleCurrentMonth-1]}`,
+                        text: textMsg,
                         confirmButtonColor: '#db2777'
                     });
                 };
@@ -916,7 +930,7 @@
             });
         }
 
-        // Admin (Simplified)
+        // Admin
         function showAdminLogin() {
             Swal.fire({
                 title: 'Admin',
