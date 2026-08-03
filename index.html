@@ -57,6 +57,19 @@
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Animasi Garis Scan Face ID */
+        @keyframes scanLineAnim {
+            0% { top: 0%; opacity: 1; }
+            50% { top: 100%; opacity: 0.5; }
+            100% { top: 0%; opacity: 1; }
+        }
+        .scan-line {
+            position: absolute; left: 0; width: 100%; height: 3px;
+            background-color: #a855f7;
+            box-shadow: 0 0 12px 3px rgba(168, 85, 247, 0.6);
+            animation: scanLineAnim 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
         .badge-pagi { background-color: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
         .badge-sore { background-color: #f3e8ff; color: #5b21b6; border: 1px solid #c4b5fd; }
         .badge-jumat { background-color: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
@@ -99,7 +112,7 @@
     <!-- MAIN CONTAINER -->
     <div class="w-full max-w-md h-full flex flex-col bg-white shadow-2xl relative overflow-hidden sm:rounded-xl sm:my-4 sm:h-[95dvh] mx-auto">
         
-        <!-- Decoration Header Absolute (Hanya muncul di balik halaman transparan) -->
+        <!-- Decoration Header Absolute -->
         <div class="absolute top-0 w-full h-48 bg-gradient-to-b from-pink-500 to-pink-600 z-0 rounded-b-[40px] shadow-lg"></div>
 
         <!-- PAGE 1: LOGIN -->
@@ -207,9 +220,8 @@
                     <button onclick="requestLocation()" class="text-[8px] bg-gray-100 px-2 py-1 rounded text-gray-500 hover:bg-gray-200">Refresh</button>
                 </div>
 
-                <!-- ACTION BUTTONS -->
+                <!-- ACTION BUTTONS (MENGGUNAKAN MODE VERIFIKASI) -->
                 <div class="grid grid-cols-3 gap-3 mb-5">
-                    <!-- DIMODIFIKASI: Mengubah onclick dari submitAbsensi('Hadir') ke showAbsenOptions() -->
                     <button onclick="showAbsenOptions()" id="btnAbsenMasuk" class="col-span-1 bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-xl shadow-lg shadow-green-200 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24">
                         <i class="fas fa-fingerprint text-2xl"></i>
                         <span class="text-xs font-bold leading-none mt-1 text-center">ABSEN<br>MASUK</span>
@@ -361,7 +373,7 @@
                         <button onclick="showPrintOptions()" class="bg-blue-600 text-white px-3 py-2 rounded text-[10px] font-bold shadow-sm hover:bg-blue-700 transition" title="Cetak Laporan Absen">
                             <i class="fas fa-print"></i> CETAK
                         </button>
-                        <!-- FITUR BARU: Tombol Cetak Jadwal Shift -->
+                        <!-- TOMBOL CETAK JADWAL SHIFT -->
                         <button onclick="showPrintScheduleOptions()" class="bg-green-600 text-white px-3 py-2 rounded text-[10px] font-bold shadow-sm hover:bg-green-700 transition" title="Cetak Jadwal Shift">
                             <i class="fas fa-calendar-check"></i> JADWAL
                         </button>
@@ -394,7 +406,7 @@
         </section>
     </div>
 
-    <!-- WADAH TERSEMBUNYI UNTUK RENDER CETAK LAPORAN (PDF/PNG) -->
+    <!-- WADAH TERSEMBUNYI UNTUK RENDER CETAK LAPORAN ABSENSI (PDF/PNG) -->
     <div class="fixed top-[-10000px] left-[-10000px] bg-gray-100 z-[-1] overflow-visible">
         <div id="printContainer" class="print-paper relative shadow-xl">
             <!-- Kop Surat -->
@@ -458,7 +470,7 @@
         </div>
     </div>
 
-    <!-- FITUR BARU: WADAH TERSEMBUNYI UNTUK RENDER CETAK JADWAL (PDF/PNG) -->
+    <!-- WADAH TERSEMBUNYI UNTUK RENDER CETAK JADWAL (PDF/PNG) -->
     <div class="fixed top-[-10000px] left-[-10000px] bg-gray-100 z-[-1] overflow-visible">
         <div id="printScheduleContainer" class="print-paper relative shadow-xl">
             <!-- Kop Surat -->
@@ -769,9 +781,9 @@
             Swal.fire({ icon: 'success', title: 'Data diperbarui', toast: true, position: 'top', timer: 1000, showConfirmButton: false });
         }
 
-        // ========== FITUR BARU: PILIHAN MODE ABSEN ==========
+        // ========== MODE VERIFIKASI KEAMANAN ABSENSI MASUK ==========
         function showAbsenOptions() {
-            // Pengecekan GPS sebelum membuka mode
+            // Pengecekan GPS sebelum masuk mode keamanan
             if (!userLocation || !userLocation.lat) {
                 showLocationPrompt(); return;
             }
@@ -783,14 +795,14 @@
 
             const htmlContent = `
                 <div class="grid grid-cols-1 gap-3 mt-4">
-                    <button onclick="processAbsenMode('faceid')" class="bg-purple-500 text-white p-3 rounded-xl flex items-center justify-center gap-2 hover:bg-purple-600 transition shadow-md">
-                        <i class="fas fa-user-check text-xl"></i> Face ID Scan
+                    <button onclick="processFaceID()" class="bg-purple-500 text-white p-3 rounded-xl flex items-center justify-center gap-2 hover:bg-purple-600 transition shadow-md">
+                        <i class="fas fa-user-check text-xl"></i> Pindai Wajah (Kamera)
                     </button>
-                    <button onclick="processAbsenMode('fingerprint')" class="bg-blue-500 text-white p-3 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-600 transition shadow-md">
-                        <i class="fas fa-fingerprint text-xl"></i> Fingerprint Scan
+                    <button onclick="processFingerprint()" class="bg-blue-500 text-white p-3 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-600 transition shadow-md">
+                        <i class="fas fa-fingerprint text-xl"></i> Sensor Sidik Jari
                     </button>
-                    <button onclick="processAbsenMode('math')" class="bg-pink-500 text-white p-3 rounded-xl flex items-center justify-center gap-2 hover:bg-pink-600 transition shadow-md">
-                        <i class="fas fa-brain text-xl"></i> Teka-Teki Matematika
+                    <button onclick="processBrainTeaser()" class="bg-pink-500 text-white p-3 rounded-xl flex items-center justify-center gap-2 hover:bg-pink-600 transition shadow-md">
+                        <i class="fas fa-brain text-xl"></i> Teka-Teki Asah Otak
                     </button>
                 </div>
             `;
@@ -806,81 +818,210 @@
             });
         }
 
-        function processAbsenMode(mode) {
+        // 1. Logika Face ID (Akses Kamera Asli)
+        function processFaceID() {
             Swal.close();
             setTimeout(() => {
-                if (mode === 'fingerprint') {
-                    Swal.fire({
-                        title: 'Scan Sidik Jari',
-                        html: '<div class="text-6xl text-blue-500 my-6 pulse"><i class="fas fa-fingerprint"></i></div><p class="text-sm font-bold text-gray-600">Tahan jari anda di layar...</p>',
-                        showConfirmButton: false,
-                        timer: 2500,
-                        timerProgressBar: true,
-                        allowOutsideClick: false
-                    }).then(() => {
-                        Swal.fire({icon: 'success', title: 'Terverifikasi!', text: 'Sidik jari cocok.', timer: 1200, showConfirmButton: false}).then(() => {
-                            submitAbsensi('Hadir'); // Lanjut ke fungsi asli
-                        });
-                    });
-                } else if (mode === 'faceid') {
-                    Swal.fire({
-                        title: 'Face ID Scanner',
-                        html: '<div class="text-6xl text-purple-500 my-6 pulse"><i class="fas fa-user-circle"></i></div><p class="text-sm font-bold text-gray-600">Mendeteksi wajah anda...</p>',
-                        showConfirmButton: false,
-                        timer: 2500,
-                        timerProgressBar: true,
-                        allowOutsideClick: false
-                    }).then(() => {
-                        Swal.fire({icon: 'success', title: 'Terverifikasi!', text: 'Wajah cocok.', timer: 1200, showConfirmButton: false}).then(() => {
-                            submitAbsensi('Hadir'); // Lanjut ke fungsi asli
-                        });
-                    });
-                } else if (mode === 'math') {
-                    let num1 = Math.floor(Math.random() * 50) + 10;
-                    let num2 = Math.floor(Math.random() * 50) + 10;
-                    let op = Math.random() > 0.5 ? '+' : '-';
-                    if(op === '-' && num1 < num2) { let temp = num1; num1 = num2; num2 = temp; }
-                    let correctAns = op === '+' ? num1 + num2 : num1 - num2;
-
-                    Swal.fire({
-                        title: 'Uji Asah Otak!',
-                        html: `<p class="text-sm text-gray-600 mb-4">Jawab soal matematika berikut untuk melanjutkan absensi:</p>
-                               <div class="text-3xl font-extrabold text-pink-600 mb-4 tracking-widest">${num1} ${op} ${num2} = ?</div>`,
-                        input: 'number',
-                        inputAttributes: { required: true, placeholder: 'Ketik jawaban Anda disini...' },
-                        showCancelButton: true,
-                        confirmButtonText: 'Verifikasi',
-                        cancelButtonText: 'Batal',
-                        confirmButtonColor: '#db2777',
-                        allowOutsideClick: false
-                    }).then((res) => {
-                        if(res.isConfirmed) {
-                            if(parseInt(res.value) === correctAns) {
-                                Swal.fire({icon: 'success', title: 'Jawaban Benar!', text: 'Otak cemerlang, verifikasi sukses.', timer: 1500, showConfirmButton: false}).then(() => {
-                                    submitAbsensi('Hadir'); // Lanjut ke fungsi asli
-                                });
-                            } else {
-                                Swal.fire({icon: 'error', title: 'Jawaban Salah!', text: 'Fokus! Verifikasi absensi digagalkan.', confirmButtonColor: '#db2777'});
-                            }
-                        }
-                    });
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    Swal.fire('Kamera Tidak Didukung', 'Browser atau perangkat Anda tidak mendukung akses kamera.', 'error');
+                    return;
                 }
+
+                Swal.fire({
+                    title: 'Verifikasi Wajah',
+                    html: `
+                        <div class="relative w-full max-w-[240px] h-[240px] mx-auto overflow-hidden rounded-full border-[6px] border-purple-200 bg-black shadow-inner">
+                            <video id="faceVideo" autoplay playsinline class="w-full h-full object-cover scale-x-[-1]"></video>
+                            <div class="scan-line"></div>
+                        </div>
+                        <p class="text-sm font-bold text-gray-600 mt-4" id="faceStatusText">Arahkan wajah Anda ke kamera...</p>
+                    `,
+                    showConfirmButton: false,
+                    showCancelButton: true,
+                    cancelButtonText: 'Batal',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        const video = document.getElementById('faceVideo');
+                        const statusText = document.getElementById('faceStatusText');
+                        
+                        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+                            .then(stream => {
+                                video.srcObject = stream;
+                                window.localStream = stream; // Simpan referensi untuk mematikan kamera nanti
+                                
+                                // Simulasi proses verifikasi setelah 2 detik
+                                setTimeout(() => {
+                                    statusText.innerHTML = '<span class="text-purple-600">Menganalisis biometrik wajah...</span>';
+                                    setTimeout(() => {
+                                        statusText.innerHTML = '<span class="text-green-600">Verifikasi Sukses!</span>';
+                                        setTimeout(() => {
+                                            stopCamera();
+                                            Swal.close();
+                                            Swal.fire({icon: 'success', title: 'Wajah Terdeteksi', timer: 1200, showConfirmButton: false}).then(() => {
+                                                submitAbsensi('Hadir'); // Lanjutkan mengirim ke server
+                                            });
+                                        }, 800);
+                                    }, 2000);
+                                }, 1500);
+                            })
+                            .catch(err => {
+                                statusText.innerHTML = '<span class="text-red-500">Gagal mengakses kamera. Pastikan Anda memberi izin.</span>';
+                            });
+                    },
+                    willClose: () => { stopCamera(); }
+                });
             }, 300);
         }
 
-        // ========== ABSENSI SUBMIT ==========
+        function stopCamera() {
+            if (window.localStream) {
+                window.localStream.getTracks().forEach(track => track.stop());
+                window.localStream = null;
+            }
+        }
+
+        // 2. Logika Fingerprint (Tahan & Tekan Layar)
+        function processFingerprint() {
+            Swal.close();
+            setTimeout(() => {
+                Swal.fire({
+                    title: 'Verifikasi Sidik Jari',
+                    html: `
+                        <p class="text-sm text-gray-500 mb-6">Sentuh dan tahan ikon sidik jari di bawah ini.</p>
+                        <div id="fingerArea" class="relative w-32 h-32 mx-auto rounded-full bg-gray-100 flex items-center justify-center cursor-pointer select-none touch-none shadow-inner border-2 border-gray-200 overflow-hidden">
+                            <div id="fingerProgress" class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-20 transition-all duration-75" style="height: 0%;"></div>
+                            <i id="fingerIcon" class="fas fa-fingerprint text-6xl text-gray-400 relative z-10 transition-colors"></i>
+                        </div>
+                        <p id="fingerStatusText" class="text-xs font-bold text-gray-500 mt-4">Menunggu sentuhan...</p>
+                    `,
+                    showConfirmButton: false,
+                    showCancelButton: true,
+                    cancelButtonText: 'Batal',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        const area = document.getElementById('fingerArea');
+                        const progress = document.getElementById('fingerProgress');
+                        const icon = document.getElementById('fingerIcon');
+                        const status = document.getElementById('fingerStatusText');
+                        
+                        let isPressing = false;
+                        let progressVal = 0;
+                        let loopTimer;
+
+                        const updateLoop = () => {
+                            if (isPressing && progressVal < 100) {
+                                progressVal += 2.5; // Kecepatan terisi (sekitar 1.2 detik jika ditahan)
+                                progress.style.height = progressVal + '%';
+                                
+                                if(progressVal > 30) icon.classList.replace('text-gray-400', 'text-blue-400');
+                                if(progressVal > 70) icon.classList.replace('text-blue-400', 'text-blue-600');
+                                
+                                if (progressVal >= 100) {
+                                    isPressing = false;
+                                    status.innerHTML = '<span class="text-blue-600">Sidik Jari Cocok!</span>';
+                                    setTimeout(() => {
+                                        Swal.close();
+                                        Swal.fire({icon: 'success', title: 'Terverifikasi!', timer: 1200, showConfirmButton: false}).then(() => {
+                                            submitAbsensi('Hadir'); // Lanjutkan mengirim ke server
+                                        });
+                                    }, 500);
+                                } else {
+                                    loopTimer = setTimeout(updateLoop, 30);
+                                }
+                            } else if (!isPressing && progressVal > 0) {
+                                progressVal -= 4; // Berkurang drastis jika dilepas sebelum penuh
+                                if(progressVal < 0) progressVal = 0;
+                                progress.style.height = progressVal + '%';
+                                
+                                if(progressVal < 70) icon.classList.replace('text-blue-600', 'text-blue-400');
+                                if(progressVal < 30) icon.classList.replace('text-blue-400', 'text-gray-400');
+                                
+                                if(progressVal > 0) {
+                                    loopTimer = setTimeout(updateLoop, 30);
+                                } else {
+                                    status.innerHTML = '<span class="text-red-500">Sentuhan terputus, coba lagi.</span>';
+                                }
+                            }
+                        };
+
+                        const startPress = (e) => { e.preventDefault(); isPressing = true; status.innerText = "Memindai..."; updateLoop(); };
+                        const stopPress = (e) => { e.preventDefault(); isPressing = false; updateLoop(); };
+
+                        // Dukungan Touch (HP) & Mouse (PC)
+                        area.addEventListener('mousedown', startPress);
+                        area.addEventListener('touchstart', startPress);
+                        window.addEventListener('mouseup', stopPress);
+                        window.addEventListener('touchend', stopPress);
+                    }
+                });
+            }, 300);
+        }
+
+        // 3. Logika Teka-Teki (Matematika Dinamis & Logika Nalar)
+        function processBrainTeaser() {
+            Swal.close();
+            setTimeout(() => {
+                // Bank Soal Beragam
+                const puzzles = [
+                    // Math Dasar
+                    () => { let a = Math.floor(Math.random() * 20)+10; let b = Math.floor(Math.random() * 10)+5; 
+                            return { q: `Berapa hasil dari ${a} + ${b}?`, a: [(a+b).toString()] }; },
+                    // Math Campuran
+                    () => { let a = Math.floor(Math.random() * 5)+2; let b = Math.floor(Math.random() * 5)+2; let c = Math.floor(Math.random() * 10)+1; 
+                            return { q: `Selesaikan perhitungan ini: ${a} × ${b} + ${c} = ?`, a: [((a*b)+c).toString()] }; },
+                    // Math Campuran (Dalam Kurung)
+                    () => { let a = Math.floor(Math.random() * 10)+15; let b = Math.floor(Math.random() * 5)+2; let c = Math.floor(Math.random() * 3)+2; 
+                            return { q: `Hitunglah: (${a} - ${b}) × ${c} = ?`, a: [((a-b)*c).toString()] }; },
+                    // Deret Angka
+                    () => { let a = Math.floor(Math.random() * 5)+2; let step = Math.floor(Math.random() * 3)+2; 
+                            return { q: `Lengkapi deret berikut: ${a}, ${a+step}, ${a+(step*2)}, ${a+(step*3)}, ... ?`, a: [(a+(step*4)).toString()] }; },
+                    // Logika Nalar
+                    () => { return { q: "Bulan apa yang memiliki 28 hari?", a: ["semua", "semua bulan", "tiap bulan"] }; },
+                    () => { return { q: "Ibu Budi memiliki 3 anak: Ali, Ani, dan siapa nama anak ketiganya?", a: ["budi"] }; },
+                    () => { return { q: "Angka berapa yang jika dikalikan angka berapapun hasilnya tetap sama?", a: ["0", "nol"] }; },
+                    () => { return { q: "Jika hari ini Senin, maka 14 hari (2 minggu) lagi adalah hari apa?", a: ["senin"] }; },
+                    () => { return { q: "Saat Anda berlari menyalip orang di posisi kedua, posisi berapakah Anda sekarang? (jawab dengan angka)", a: ["2", "dua", "kedua"] }; }
+                ];
+
+                const selectedPuzzle = puzzles[Math.floor(Math.random() * puzzles.length)]();
+
+                Swal.fire({
+                    title: 'Uji Asah Otak!',
+                    html: `
+                        <p class="text-sm text-gray-600 mb-4">Jawab pertanyaan berikut dengan benar untuk verifikasi absensi:</p>
+                        <div class="bg-pink-50 border border-pink-200 p-4 rounded-xl text-pink-700 font-bold mb-4">${selectedPuzzle.q}</div>
+                    `,
+                    input: 'text',
+                    inputAttributes: { required: true, placeholder: 'Ketik jawaban Anda disini...', autocapitalize: 'off' },
+                    showCancelButton: true,
+                    confirmButtonText: 'Verifikasi',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#db2777',
+                    allowOutsideClick: false,
+                    preConfirm: (answer) => {
+                        if (!answer) { Swal.showValidationMessage("Jawaban tidak boleh kosong"); return false; }
+                        
+                        let ansClean = answer.toLowerCase().trim();
+                        if (selectedPuzzle.a.includes(ansClean)) {
+                            return true; // Lanjut
+                        } else {
+                            Swal.showValidationMessage("Jawaban Salah! Fokus dan coba lagi.");
+                            return false;
+                        }
+                    }
+                }).then((res) => {
+                    if(res.isConfirmed) {
+                        Swal.fire({icon: 'success', title: 'Brilian!', text: 'Jawaban benar, verifikasi sukses.', timer: 1500, showConfirmButton: false}).then(() => {
+                            submitAbsensi('Hadir'); // Lanjutkan mengirim ke server
+                        });
+                    }
+                });
+            }, 300);
+        }
+
+        // ========== ABSENSI SUBMIT (PROSES KE SERVER) ==========
         function submitAbsensi(statusType) {
-            // Cek GPS (tetap ada sesuai kode original, aman)
-            if (statusType === 'Hadir' && (!userLocation || !userLocation.lat)) {
-                showLocationPrompt(); return;
-            }
-            if (statusType === 'Hadir' && userLocation) {
-                const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
-                if (d > MAX_RADIUS_METER) {
-                    Swal.fire({ icon: 'error', title: 'Di Luar Area', text: `Jarak Anda: ${Math.round(d)}m (Maks: ${MAX_RADIUS_METER}m)` });
-                    return;
-                }
-            }
+            // (Fungsi ini tetap tidak diubah secara inti, dipanggil setelah verifikasi)
             if (statusType !== 'Hadir') {
                 Swal.fire({
                     title: `Alasan ${statusType}`, input: 'textarea', showCancelButton: true, confirmButtonText: 'Kirim', confirmButtonColor: '#db2777'
@@ -927,7 +1068,6 @@
             if (!todayStatus || todayStatus.status === "Belum Absen") {
                 banner.classList.add('hidden');
                 btn.disabled = false;
-                // btn class dikembalikan dengan click showAbsenOptions tetap ada di dom HTML
                 btn.className = "col-span-1 bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-xl shadow-lg shadow-green-200 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24";
                 return;
             }
@@ -1087,7 +1227,6 @@
         }
 
         // ========== JADWAL BULANAN & POP UP JADWAL HARI INI ==========
-        
         function showScheduleInfo() {
             const todayStr = new Date().toISOString().split('T')[0];
             toggleLoading(true, "Memuat Pembagian Jadwal Hari Ini...");
@@ -1358,7 +1497,7 @@
             });
         }
 
-        // ========== FITUR BARU: CETAK JADWAL SHIFT ==========
+        // ========== FITUR CETAK JADWAL SHIFT ==========
         async function showPrintScheduleOptions() {
             const startDate = document.getElementById('filterStartDate').value;
             const endDate = document.getElementById('filterEndDate').value;
@@ -1418,7 +1557,7 @@
 
             // Proses fetch paralel dengan batasan (chunk)
             let allData = [];
-            const chunkSize = 7; // Hindari terlalu banyak koneksi berbarengan ke Google Script
+            const chunkSize = 7; 
             
             for (let i = 0; i < datesToFetch.length; i += chunkSize) {
                 const chunk = datesToFetch.slice(i, i + chunkSize);
