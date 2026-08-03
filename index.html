@@ -79,7 +79,7 @@
         .badge-lembur { background-color: #ede9fe; color: #5b21b6; border: 1px solid #a78bfa; }
 
         .print-paper {
-            width: 210mm; 
+            width: 297mm; /* Dibuat landscape A4 agar kolom muat */
             background: white;
             color: black;
             padding: 40px;
@@ -92,7 +92,7 @@
 
     <!-- KONFIGURASI -->
     <script>
-        // GANTI URL INI JIKA ANDA MELAKUKAN DEPLOYMENT BARU DI GOOGLE SCRIPT
+        // PASTIKAN MENGGANTI URL INI SETELAH DEPLOY ULANG GOOGLE SCRIPT
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztVRsmMLBmZq-38ZCFAk4a5uygJyDl0QzdZFgQTRrsLrDi8Ce1p01xHL8Ztxj-KXSVMA/exec"; 
         
         const CLINIC_LAT = 1.3695652; 
@@ -122,7 +122,7 @@
                     <i class="fas fa-hospital-user text-3xl text-pink-600"></i>
                 </div>
                 <h1 class="text-xl font-bold text-gray-800">Klinik Nabilah</h1>
-                <p class="text-xs text-pink-500 font-bold tracking-wider mb-2">E-ABSENSI (Simple Mode)</p>
+                <p class="text-xs text-pink-500 font-bold tracking-wider mb-2">E-ABSENSI (Verified Mode)</p>
                 <p class="text-[10px] text-gray-400 mb-4">Pilih nama untuk masuk</p>
 
                 <div class="text-left space-y-4">
@@ -134,7 +134,6 @@
                                 <optgroup label="Bidan (Shift)">
                                     <option value="Erlina">Erlina</option>
                                     <option value="Riska">Riska</option>
-                                    
                                     <option value="Desva">Desva</option>
                                     <option value="Aisyah">Aisyah</option>
                                     <option value="Rina">Rina</option>
@@ -220,21 +219,26 @@
                     <button onclick="requestLocation()" class="text-[8px] bg-gray-100 px-2 py-1 rounded text-gray-500 hover:bg-gray-200">Refresh</button>
                 </div>
 
-                <!-- ACTION BUTTONS (MENGGUNAKAN MODE VERIFIKASI) -->
-                <div class="grid grid-cols-3 gap-3 mb-5">
-                    <button onclick="showAbsenOptions()" id="btnAbsenMasuk" class="col-span-1 bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-xl shadow-lg shadow-green-200 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24">
+                <!-- ACTION BUTTONS UTAMA (DIPERBARUI DENGAN PILIHAN TUGAS LUAR) -->
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <button onclick="showAbsenOptions()" id="btnAbsenMasuk" class="col-span-1 bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-xl shadow-lg shadow-green-200 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-20">
                         <i class="fas fa-fingerprint text-2xl"></i>
-                        <span class="text-xs font-bold leading-none mt-1 text-center">ABSEN<br>MASUK</span>
+                        <span class="text-xs font-bold leading-none mt-1 text-center">ABSEN MASUK</span>
                     </button>
 
-                    <button onclick="submitAbsensi('Izin')" class="col-span-1 bg-white border border-blue-100 p-3 rounded-xl shadow-sm active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24 text-blue-500 hover:bg-blue-50">
-                        <i class="fas fa-envelope-open-text text-xl"></i>
-                        <span class="text-xs font-bold">Izin</span>
+                    <button onclick="showOtherAbsensiOptions()" id="btnTugasLuar" class="col-span-1 bg-white border border-purple-100 text-purple-600 p-3 rounded-xl shadow-sm hover:bg-purple-50 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-20">
+                        <i class="fas fa-briefcase-medical text-2xl"></i>
+                        <span class="text-[10px] font-bold leading-none mt-1 text-center uppercase">Tugas Luar /<br>Izin Sebentar</span>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <button onclick="submitAbsensi('Sakit')" class="col-span-1 bg-white border border-yellow-100 p-3 rounded-xl shadow-sm active:scale-95 transition flex justify-center items-center gap-2 text-yellow-500 hover:bg-yellow-50">
+                        <i class="fas fa-procedures text-lg"></i> <span class="text-xs font-bold">Sakit (MC)</span>
                     </button>
 
-                    <button onclick="submitAbsensi('Sakit')" class="col-span-1 bg-white border border-yellow-100 p-3 rounded-xl shadow-sm active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24 text-yellow-500 hover:bg-yellow-50">
-                        <i class="fas fa-procedures text-xl"></i>
-                        <span class="text-xs font-bold">Sakit</span>
+                    <button onclick="submitAbsensi('Izin')" class="col-span-1 bg-white border border-blue-100 p-3 rounded-xl shadow-sm active:scale-95 transition flex justify-center items-center gap-2 text-blue-500 hover:bg-blue-50">
+                        <i class="fas fa-envelope-open-text text-lg"></i> <span class="text-xs font-bold">Izin Cuti</span>
                     </button>
                 </div>
 
@@ -330,7 +334,7 @@
             </div>
         </section>
 
-        <!-- PAGE 4: ADMIN DASHBOARD -->
+        <!-- PAGE 4: ADMIN DASHBOARD (DIPERBARUI DENGAN LOKASI DAN KETERANGAN) -->
         <section id="adminDashboard" class="flex-1 flex flex-col hidden bg-gray-50 h-full overflow-hidden relative z-20">
             <div class="bg-gradient-to-r from-pink-500 to-pink-600 p-4 shadow-sm flex justify-between items-center shrink-0 text-white relative z-30">
                 <div>
@@ -359,7 +363,6 @@
                                 <option value="All">Semua Pegawai</option>
                                 <option value="Erlina">Erlina</option>
                                 <option value="Riska">Riska</option>
-                                
                                 <option value="Desva">Desva</option>
                                 <option value="Aisyah">Aisyah</option>
                                 <option value="Rina">Rina</option>
@@ -373,7 +376,6 @@
                         <button onclick="showPrintOptions()" class="bg-blue-600 text-white px-3 py-2 rounded text-[10px] font-bold shadow-sm hover:bg-blue-700 transition" title="Cetak Laporan Absen">
                             <i class="fas fa-print"></i> CETAK
                         </button>
-                        <!-- TOMBOL CETAK JADWAL SHIFT -->
                         <button onclick="showPrintScheduleOptions()" class="bg-green-600 text-white px-3 py-2 rounded text-[10px] font-bold shadow-sm hover:bg-green-700 transition" title="Cetak Jadwal Shift">
                             <i class="fas fa-calendar-check"></i> JADWAL
                         </button>
@@ -385,6 +387,7 @@
                         <span class="text-[10px] text-pink-700 font-bold" id="tableSummaryInfo">Menampilkan data...</span>
                     </div>
                     <div class="overflow-x-auto pb-2">
+                        <!-- TABEL ADMIN DIPERBARUI: Kolom Keterangan dan Lokasi -->
                         <table class="w-full text-[10px] text-left whitespace-nowrap">
                             <thead class="bg-white text-gray-500 uppercase font-bold border-b border-gray-200">
                                 <tr>
@@ -393,6 +396,7 @@
                                     <th class="p-2 text-center">Shift</th>
                                     <th class="p-2">In/Ket</th>
                                     <th class="p-2">Out</th>
+                                    <th class="p-2 text-center">Lokasi</th>
                                     <th class="p-2 pr-3">Status</th>
                                 </tr>
                             </thead>
@@ -433,26 +437,27 @@
             <div class="flex justify-around bg-pink-50 p-4 rounded-lg mb-6 border border-pink-100">
                 <div class="text-center"><p class="text-xs text-gray-500">Total Data</p><p class="text-xl font-bold text-gray-800" id="printStatTotal">-</p></div>
                 <div class="text-center"><p class="text-xs text-gray-500">Total Hadir</p><p class="text-xl font-bold text-green-600" id="printStatHadir">-</p></div>
-                <div class="text-center"><p class="text-xs text-gray-500">Total Sakit</p><p class="text-xl font-bold text-yellow-600" id="printStatSakit">-</p></div>
-                <div class="text-center"><p class="text-xs text-gray-500">Total Izin</p><p class="text-xl font-bold text-blue-600" id="printStatIzin">-</p></div>
+                <div class="text-center"><p class="text-xs text-gray-500">Total Sakit/Izin</p><p class="text-xl font-bold text-yellow-600" id="printStatSakit">-</p></div>
+                <div class="text-center"><p class="text-xs text-gray-500">Tugas Luar/Lain</p><p class="text-xl font-bold text-blue-600" id="printStatTugasLuar">-</p></div>
                 <div class="text-center border-l-2 border-pink-200 pl-4"><p class="text-xs text-gray-500">Keterlambatan</p><p class="text-xl font-bold text-red-600" id="printStatTelat">-</p></div>
             </div>
 
-            <!-- Tabel Cetak -->
+            <!-- Tabel Cetak Laporan - (Diperbarui dengan Lokasi & Ket) -->
             <table class="w-full text-sm text-left border-collapse border border-gray-300">
-                <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
+                <thead class="bg-gray-100 text-gray-700 uppercase text-[10px]">
                     <tr>
-                        <th class="p-2 border border-gray-300 text-center w-10">No</th>
+                        <th class="p-2 border border-gray-300 text-center w-8">No</th>
                         <th class="p-2 border border-gray-300">Tanggal</th>
                         <th class="p-2 border border-gray-300">Nama</th>
                         <th class="p-2 border border-gray-300 text-center">Shift</th>
                         <th class="p-2 border border-gray-300 text-center">Masuk</th>
                         <th class="p-2 border border-gray-300 text-center">Pulang</th>
                         <th class="p-2 border border-gray-300 text-center">Status</th>
-                        <th class="p-2 border border-gray-300 text-center">Ket. Telat</th>
+                        <th class="p-2 border border-gray-300 text-center">Keterangan</th>
+                        <th class="p-2 border border-gray-300 text-center">Lokasi (Lat,Long)</th>
                     </tr>
                 </thead>
-                <tbody id="printTableData" class="text-gray-700 text-xs"></tbody>
+                <tbody id="printTableData" class="text-gray-700 text-[10px]"></tbody>
             </table>
 
             <!-- Tanda Tangan -->
@@ -546,7 +551,6 @@
 
         // ========== INIT ==========
         document.addEventListener('DOMContentLoaded', function() {
-            // Set Tanggal Filter Admin (Awal Bulan s/d Hari ini)
             const today = new Date();
             const firstDayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
             const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
@@ -562,28 +566,18 @@
         });
 
         // ========== FORMATTER & CALCULATOR ==========
-
-        // 1. Format Tanggal Cerdas
         function formatTanggalStandard(dateStr) {
             if (!dateStr || dateStr === '-') return "-";
             try {
                 let d;
                 let str = String(dateStr).trim();
-                
                 if (str.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                    const parts = str.split('/');
-                    d = new Date(parts[2], parts[1] - 1, parts[0]);
-                } 
-                else if (str.match(/^\d{4}-\d{2}-\d{2}/)) {
-                    const parts = str.split(' ')[0].split('T')[0].split('-');
-                    d = new Date(parts[0], parts[1] - 1, parts[2]);
-                } 
-                else {
-                    d = new Date(str);
-                }
+                    const parts = str.split('/'); d = new Date(parts[2], parts[1] - 1, parts[0]);
+                } else if (str.match(/^\d{4}-\d{2}-\d{2}/)) {
+                    const parts = str.split(' ')[0].split('T')[0].split('-'); d = new Date(parts[0], parts[1] - 1, parts[2]);
+                } else { d = new Date(str); }
                 
                 if (isNaN(d.getTime())) return str;
-
                 const day = String(d.getDate()).padStart(2, '0');
                 const month = MONTH_NAMES[d.getMonth()];
                 const year = d.getFullYear();
@@ -591,11 +585,9 @@
             } catch(e) { return dateStr; }
         }
 
-        // 2. Format Jam & Fix 1899 di UI
         function formatJamStandard(timeStr) {
             if (!timeStr || timeStr === '-' || timeStr === '') return '-';
             let str = String(timeStr).trim();
-            
             if (str.includes('1899')) {
                 try {
                     let timePart = str.split('T')[1].replace('Z', ''); 
@@ -605,23 +597,21 @@
                     return String(h).padStart(2, '0') + ':' + parts[1].padStart(2, '0');
                 } catch(e) {}
             }
-
             let parts = str.split(':');
             if (parts.length >= 2) return `${parts[0].padStart(2,'0')}:${parts[1].padStart(2,'0')}`;
-            
             return str;
         }
 
-        // 3. Cek Keterlambatan
         function checkLateness(shift, jamMasukRaw, status) {
             const jamMasuk = formatJamStandard(jamMasukRaw);
+            // Keterlambatan HANYA untuk status Hadir
             if (status !== 'Hadir' || !jamMasuk || jamMasuk === '-') return { status: 'none', text: '-' };
             
-            let startMins = 8 * 60; // 08:00
+            let startMins = 8 * 60; 
             let tolerance = 15;
 
             const sName = (shift || "").toLowerCase();
-            if (sName.includes('sore')) startMins = 15 * 60; // 15:00
+            if (sName.includes('sore')) startMins = 15 * 60; 
             else if (sName.includes('pagi') || sName.includes('jumat')) startMins = 8 * 60;
             else if (sName.includes('libur') || sName.includes('non-shift') || sName.includes('lembur')) return { status: 'none', text: '-' };
 
@@ -690,7 +680,6 @@
                     gpsErrorState = "Terjadi kesalahan pelacakan lokasi.";
                     locTxt.innerHTML = `<span class="text-red-600 font-bold">Lokasi Gagal</span>`; break;
             }
-            
             distTxt.innerText = "Tidak bisa absen masuk";
             gpsEl.className = "w-2 h-2 rounded-full bg-red-500 ml-2";
         }
@@ -700,27 +689,21 @@
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
-                        toggleLoading(false);
-                        updatePosition(pos);
-                        Swal.fire({ icon: 'success', title: 'GPS Terdeteksi!', text: 'Silahkan klik ABSEN MASUK', timer: 2000, showConfirmButton: false });
+                        toggleLoading(false); updatePosition(pos);
+                        Swal.fire({ icon: 'success', title: 'GPS Terdeteksi!', text: 'Silahkan klik absen', timer: 2000, showConfirmButton: false });
                     },
                     (err) => {
-                        toggleLoading(false);
-                        errorPosition(err);
-                        showLocationPrompt();
+                        toggleLoading(false); errorPosition(err); showLocationPrompt();
                     },
                     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
-            } else {
-                toggleLoading(false);
-            }
+            } else toggleLoading(false);
         }
 
         function showLocationPrompt() {
             let textMsg = gpsErrorState || "GPS belum terbaca.";
             Swal.fire({
-                icon: 'warning',
-                title: 'Lokasi Belum Aktif!',
+                icon: 'warning', title: 'Lokasi Belum Aktif!',
                 html: `<div class="text-sm text-gray-600 mb-4">${textMsg}</div>
                        <div class="bg-pink-50 p-3 rounded-lg text-xs text-left border border-pink-200">
                          <b class="text-pink-700"><i class="fas fa-tools"></i> Solusi:</b><br>
@@ -730,21 +713,13 @@
                              <li>Klik tombol deteksi ulang di bawah ini.</li>
                          </ol>
                        </div>`,
-                showCancelButton: true,
-                confirmButtonText: '<i class="fas fa-sync"></i> Deteksi Ulang',
-                cancelButtonText: 'Tutup',
-                confirmButtonColor: '#db2777',
-            }).then((result) => {
-                if (result.isConfirmed) forceRequestLocation();
-            });
+                showCancelButton: true, confirmButtonText: '<i class="fas fa-sync"></i> Deteksi Ulang', cancelButtonText: 'Tutup', confirmButtonColor: '#db2777',
+            }).then((result) => { if (result.isConfirmed) forceRequestLocation(); });
         }
 
         function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
-            const φ1 = lat1 * Math.PI/180;
-            const φ2 = lat2 * Math.PI/180;
-            const Δφ = (lat2-lat1) * Math.PI/180;
-            const Δλ = (lon2-lon1) * Math.PI/180;
+            const R = 6371e3; const φ1 = lat1 * Math.PI/180; const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180; const Δλ = (lon2-lon1) * Math.PI/180;
             const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
@@ -759,10 +734,7 @@
             document.getElementById('userDashboard').classList.remove('hidden');
             document.getElementById('userDashboard').classList.add('flex');
             
-            loadUserDashboard();
-            loadUserHistory();
-            loadNextDaysSchedule();
-            checkTodayStatus();
+            loadUserDashboard(); loadUserHistory(); loadNextDaysSchedule(); checkTodayStatus();
         }
 
         function logout() {
@@ -773,20 +745,14 @@
         }
 
         function refreshUserData() {
-            loadUserDashboard();
-            loadUserHistory();
-            loadNextDaysSchedule();
-            checkTodayStatus();
+            loadUserDashboard(); loadUserHistory(); loadNextDaysSchedule(); checkTodayStatus();
             navigator.geolocation.getCurrentPosition(updatePosition, errorPosition);
             Swal.fire({ icon: 'success', title: 'Data diperbarui', toast: true, position: 'top', timer: 1000, showConfirmButton: false });
         }
 
         // ========== MODE VERIFIKASI KEAMANAN ABSENSI MASUK ==========
         function showAbsenOptions() {
-            // Pengecekan GPS sebelum masuk mode keamanan
-            if (!userLocation || !userLocation.lat) {
-                showLocationPrompt(); return;
-            }
+            if (!userLocation || !userLocation.lat) { showLocationPrompt(); return; }
             const d = getDistance(userLocation.lat, userLocation.lng, CLINIC_LAT, CLINIC_LNG);
             if (d > MAX_RADIUS_METER) {
                 Swal.fire({ icon: 'error', title: 'Di Luar Area', text: `Jarak Anda: ${Math.round(d)}m (Maks: ${MAX_RADIUS_METER}m)` });
@@ -808,25 +774,17 @@
             `;
 
             Swal.fire({
-                title: 'Verifikasi Kehadiran',
-                text: 'Pilih mode keamanan absen masuk Anda:',
-                html: htmlContent,
-                showConfirmButton: false,
-                showCancelButton: true,
-                cancelButtonText: 'Batal',
-                cancelButtonColor: '#6b7280'
+                title: 'Verifikasi Kehadiran', text: 'Pilih mode keamanan absen masuk Anda:',
+                html: htmlContent, showConfirmButton: false, showCancelButton: true, cancelButtonText: 'Batal'
             });
         }
 
-        // 1. Logika Face ID (Akses Kamera Asli)
         function processFaceID() {
             Swal.close();
             setTimeout(() => {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    Swal.fire('Kamera Tidak Didukung', 'Browser atau perangkat Anda tidak mendukung akses kamera.', 'error');
-                    return;
+                    Swal.fire('Kamera Tidak Didukung', 'Browser perangkat tidak mendukung akses kamera.', 'error'); return;
                 }
-
                 Swal.fire({
                     title: 'Verifikasi Wajah',
                     html: `
@@ -836,37 +794,23 @@
                         </div>
                         <p class="text-sm font-bold text-gray-600 mt-4" id="faceStatusText">Arahkan wajah Anda ke kamera...</p>
                     `,
-                    showConfirmButton: false,
-                    showCancelButton: true,
-                    cancelButtonText: 'Batal',
-                    allowOutsideClick: false,
+                    showConfirmButton: false, showCancelButton: true, cancelButtonText: 'Batal', allowOutsideClick: false,
                     didOpen: () => {
                         const video = document.getElementById('faceVideo');
                         const statusText = document.getElementById('faceStatusText');
-                        
-                        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-                            .then(stream => {
-                                video.srcObject = stream;
-                                window.localStream = stream; // Simpan referensi untuk mematikan kamera nanti
-                                
-                                // Simulasi proses verifikasi setelah 2 detik
+                        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }).then(stream => {
+                                video.srcObject = stream; window.localStream = stream; 
                                 setTimeout(() => {
                                     statusText.innerHTML = '<span class="text-purple-600">Menganalisis biometrik wajah...</span>';
                                     setTimeout(() => {
                                         statusText.innerHTML = '<span class="text-green-600">Verifikasi Sukses!</span>';
                                         setTimeout(() => {
-                                            stopCamera();
-                                            Swal.close();
-                                            Swal.fire({icon: 'success', title: 'Wajah Terdeteksi', timer: 1200, showConfirmButton: false}).then(() => {
-                                                submitAbsensi('Hadir'); // Lanjutkan mengirim ke server
-                                            });
+                                            stopCamera(); Swal.close();
+                                            Swal.fire({icon: 'success', title: 'Wajah Terdeteksi', timer: 1200, showConfirmButton: false}).then(() => submitAbsensi('Hadir'));
                                         }, 800);
                                     }, 2000);
                                 }, 1500);
-                            })
-                            .catch(err => {
-                                statusText.innerHTML = '<span class="text-red-500">Gagal mengakses kamera. Pastikan Anda memberi izin.</span>';
-                            });
+                            }).catch(err => { statusText.innerHTML = '<span class="text-red-500">Gagal mengakses kamera. Pastikan Anda memberi izin.</span>'; });
                     },
                     willClose: () => { stopCamera(); }
                 });
@@ -874,13 +818,9 @@
         }
 
         function stopCamera() {
-            if (window.localStream) {
-                window.localStream.getTracks().forEach(track => track.stop());
-                window.localStream = null;
-            }
+            if (window.localStream) { window.localStream.getTracks().forEach(track => track.stop()); window.localStream = null; }
         }
 
-        // 2. Logika Fingerprint (Tahan & Tekan Layar)
         function processFingerprint() {
             Swal.close();
             setTimeout(() => {
@@ -894,139 +834,142 @@
                         </div>
                         <p id="fingerStatusText" class="text-xs font-bold text-gray-500 mt-4">Menunggu sentuhan...</p>
                     `,
-                    showConfirmButton: false,
-                    showCancelButton: true,
-                    cancelButtonText: 'Batal',
-                    allowOutsideClick: false,
+                    showConfirmButton: false, showCancelButton: true, cancelButtonText: 'Batal', allowOutsideClick: false,
                     didOpen: () => {
                         const area = document.getElementById('fingerArea');
                         const progress = document.getElementById('fingerProgress');
                         const icon = document.getElementById('fingerIcon');
                         const status = document.getElementById('fingerStatusText');
-                        
-                        let isPressing = false;
-                        let progressVal = 0;
-                        let loopTimer;
+                        let isPressing = false; let progressVal = 0; let loopTimer;
 
                         const updateLoop = () => {
                             if (isPressing && progressVal < 100) {
-                                progressVal += 2.5; // Kecepatan terisi (sekitar 1.2 detik jika ditahan)
-                                progress.style.height = progressVal + '%';
-                                
+                                progressVal += 2.5; progress.style.height = progressVal + '%';
                                 if(progressVal > 30) icon.classList.replace('text-gray-400', 'text-blue-400');
                                 if(progressVal > 70) icon.classList.replace('text-blue-400', 'text-blue-600');
                                 
                                 if (progressVal >= 100) {
-                                    isPressing = false;
-                                    status.innerHTML = '<span class="text-blue-600">Sidik Jari Cocok!</span>';
+                                    isPressing = false; status.innerHTML = '<span class="text-blue-600">Sidik Jari Cocok!</span>';
                                     setTimeout(() => {
-                                        Swal.close();
-                                        Swal.fire({icon: 'success', title: 'Terverifikasi!', timer: 1200, showConfirmButton: false}).then(() => {
-                                            submitAbsensi('Hadir'); // Lanjutkan mengirim ke server
-                                        });
+                                        Swal.close(); Swal.fire({icon: 'success', title: 'Terverifikasi!', timer: 1200, showConfirmButton: false}).then(() => submitAbsensi('Hadir'));
                                     }, 500);
-                                } else {
-                                    loopTimer = setTimeout(updateLoop, 30);
-                                }
+                                } else { loopTimer = setTimeout(updateLoop, 30); }
                             } else if (!isPressing && progressVal > 0) {
-                                progressVal -= 4; // Berkurang drastis jika dilepas sebelum penuh
-                                if(progressVal < 0) progressVal = 0;
-                                progress.style.height = progressVal + '%';
-                                
+                                progressVal -= 4; if(progressVal < 0) progressVal = 0; progress.style.height = progressVal + '%';
                                 if(progressVal < 70) icon.classList.replace('text-blue-600', 'text-blue-400');
                                 if(progressVal < 30) icon.classList.replace('text-blue-400', 'text-gray-400');
-                                
-                                if(progressVal > 0) {
-                                    loopTimer = setTimeout(updateLoop, 30);
-                                } else {
-                                    status.innerHTML = '<span class="text-red-500">Sentuhan terputus, coba lagi.</span>';
-                                }
+                                if(progressVal > 0) loopTimer = setTimeout(updateLoop, 30);
+                                else status.innerHTML = '<span class="text-red-500">Sentuhan terputus, coba lagi.</span>';
                             }
                         };
-
                         const startPress = (e) => { e.preventDefault(); isPressing = true; status.innerText = "Memindai..."; updateLoop(); };
                         const stopPress = (e) => { e.preventDefault(); isPressing = false; updateLoop(); };
 
-                        // Dukungan Touch (HP) & Mouse (PC)
-                        area.addEventListener('mousedown', startPress);
-                        area.addEventListener('touchstart', startPress);
-                        window.addEventListener('mouseup', stopPress);
-                        window.addEventListener('touchend', stopPress);
+                        area.addEventListener('mousedown', startPress); area.addEventListener('touchstart', startPress);
+                        window.addEventListener('mouseup', stopPress); window.addEventListener('touchend', stopPress);
                     }
                 });
             }, 300);
         }
 
-        // 3. Logika Teka-Teki (Matematika Dinamis & Logika Nalar)
         function processBrainTeaser() {
             Swal.close();
             setTimeout(() => {
-                // Bank Soal Beragam
                 const puzzles = [
-                    // Math Dasar
-                    () => { let a = Math.floor(Math.random() * 20)+10; let b = Math.floor(Math.random() * 10)+5; 
-                            return { q: `Berapa hasil dari ${a} + ${b}?`, a: [(a+b).toString()] }; },
-                    // Math Campuran
-                    () => { let a = Math.floor(Math.random() * 5)+2; let b = Math.floor(Math.random() * 5)+2; let c = Math.floor(Math.random() * 10)+1; 
-                            return { q: `Selesaikan perhitungan ini: ${a} × ${b} + ${c} = ?`, a: [((a*b)+c).toString()] }; },
-                    // Math Campuran (Dalam Kurung)
-                    () => { let a = Math.floor(Math.random() * 10)+15; let b = Math.floor(Math.random() * 5)+2; let c = Math.floor(Math.random() * 3)+2; 
-                            return { q: `Hitunglah: (${a} - ${b}) × ${c} = ?`, a: [((a-b)*c).toString()] }; },
-                    // Deret Angka
-                    () => { let a = Math.floor(Math.random() * 5)+2; let step = Math.floor(Math.random() * 3)+2; 
-                            return { q: `Lengkapi deret berikut: ${a}, ${a+step}, ${a+(step*2)}, ${a+(step*3)}, ... ?`, a: [(a+(step*4)).toString()] }; },
-                    // Logika Nalar
+                    () => { let a = Math.floor(Math.random() * 20)+10; let b = Math.floor(Math.random() * 10)+5; return { q: `Berapa hasil dari ${a} + ${b}?`, a: [(a+b).toString()] }; },
+                    () => { let a = Math.floor(Math.random() * 5)+2; let b = Math.floor(Math.random() * 5)+2; let c = Math.floor(Math.random() * 10)+1; return { q: `Selesaikan perhitungan ini: ${a} × ${b} + ${c} = ?`, a: [((a*b)+c).toString()] }; },
+                    () => { let a = Math.floor(Math.random() * 10)+15; let b = Math.floor(Math.random() * 5)+2; let c = Math.floor(Math.random() * 3)+2; return { q: `Hitunglah: (${a} - ${b}) × ${c} = ?`, a: [((a-b)*c).toString()] }; },
+                    () => { let a = Math.floor(Math.random() * 5)+2; let step = Math.floor(Math.random() * 3)+2; return { q: `Lengkapi deret: ${a}, ${a+step}, ${a+(step*2)}, ${a+(step*3)}, ... ?`, a: [(a+(step*4)).toString()] }; },
                     () => { return { q: "Bulan apa yang memiliki 28 hari?", a: ["semua", "semua bulan", "tiap bulan"] }; },
-                    () => { return { q: "Ibu Budi memiliki 3 anak: Ali, Ani, dan siapa nama anak ketiganya?", a: ["budi"] }; },
-                    () => { return { q: "Angka berapa yang jika dikalikan angka berapapun hasilnya tetap sama?", a: ["0", "nol"] }; },
-                    () => { return { q: "Jika hari ini Senin, maka 14 hari (2 minggu) lagi adalah hari apa?", a: ["senin"] }; },
                     () => { return { q: "Saat Anda berlari menyalip orang di posisi kedua, posisi berapakah Anda sekarang? (jawab dengan angka)", a: ["2", "dua", "kedua"] }; }
                 ];
-
                 const selectedPuzzle = puzzles[Math.floor(Math.random() * puzzles.length)]();
 
                 Swal.fire({
                     title: 'Uji Asah Otak!',
-                    html: `
-                        <p class="text-sm text-gray-600 mb-4">Jawab pertanyaan berikut dengan benar untuk verifikasi absensi:</p>
-                        <div class="bg-pink-50 border border-pink-200 p-4 rounded-xl text-pink-700 font-bold mb-4">${selectedPuzzle.q}</div>
-                    `,
-                    input: 'text',
-                    inputAttributes: { required: true, placeholder: 'Ketik jawaban Anda disini...', autocapitalize: 'off' },
-                    showCancelButton: true,
-                    confirmButtonText: 'Verifikasi',
-                    cancelButtonText: 'Batal',
-                    confirmButtonColor: '#db2777',
-                    allowOutsideClick: false,
+                    html: `<p class="text-sm text-gray-600 mb-4">Jawab pertanyaan berikut dengan benar untuk verifikasi absensi:</p>
+                           <div class="bg-pink-50 border border-pink-200 p-4 rounded-xl text-pink-700 font-bold mb-4">${selectedPuzzle.q}</div>`,
+                    input: 'text', inputAttributes: { required: true, placeholder: 'Ketik jawaban Anda disini...', autocapitalize: 'off' },
+                    showCancelButton: true, confirmButtonText: 'Verifikasi', cancelButtonText: 'Batal', confirmButtonColor: '#db2777', allowOutsideClick: false,
                     preConfirm: (answer) => {
                         if (!answer) { Swal.showValidationMessage("Jawaban tidak boleh kosong"); return false; }
-                        
-                        let ansClean = answer.toLowerCase().trim();
-                        if (selectedPuzzle.a.includes(ansClean)) {
-                            return true; // Lanjut
-                        } else {
-                            Swal.showValidationMessage("Jawaban Salah! Fokus dan coba lagi.");
-                            return false;
-                        }
+                        if (selectedPuzzle.a.includes(answer.toLowerCase().trim())) return true;
+                        else { Swal.showValidationMessage("Jawaban Salah! Fokus dan coba lagi."); return false; }
                     }
                 }).then((res) => {
-                    if(res.isConfirmed) {
-                        Swal.fire({icon: 'success', title: 'Brilian!', text: 'Jawaban benar, verifikasi sukses.', timer: 1500, showConfirmButton: false}).then(() => {
-                            submitAbsensi('Hadir'); // Lanjutkan mengirim ke server
-                        });
-                    }
+                    if(res.isConfirmed) Swal.fire({icon: 'success', title: 'Brilian!', text: 'Verifikasi sukses.', timer: 1500, showConfirmButton: false}).then(() => submitAbsensi('Hadir'));
                 });
             }, 300);
         }
 
+        // ========== FITUR BARU: TUGAS LUAR, HOMECARE & IZIN SEBENTAR ==========
+        function showOtherAbsensiOptions() {
+            if (!userLocation || !userLocation.lat) { showLocationPrompt(); return; } // Tetap harus terdeteksi di suatu tempat
+            
+            Swal.fire({
+                title: 'Pilih Jenis Kegiatan Lainnya',
+                input: 'select',
+                inputOptions: {
+                    'Dinas Luar': 'Dinas Luar (Keluar Klinik)',
+                    'Homecare': 'Homecare (Kunjungan Pasien)',
+                    'Izin Sebentar': 'Izin Keluar Sebentar',
+                    'Lainnya': 'Lainnya'
+                },
+                inputPlaceholder: 'Pilih Tipe Kehadiran',
+                showCancelButton: true,
+                confirmButtonColor: '#db2777',
+                cancelButtonText: 'Batal',
+                inputValidator: (value) => {
+                    return new Promise((resolve) => {
+                        if (value) resolve(); else resolve('Anda harus memilih tipe kehadiran');
+                    });
+                }
+            }).then((res) => {
+                if (res.isConfirmed && res.value) {
+                    const statusType = res.value;
+                    
+                    if (statusType === 'Izin Sebentar') {
+                        // Jika Izin Sebentar, tanyakan estimasi durasinya.
+                        Swal.fire({
+                            title: 'Durasi Izin',
+                            input: 'text',
+                            inputPlaceholder: 'Contoh: 2 Jam, Pulang Jam 13:00, dll',
+                            showCancelButton: true,
+                            confirmButtonColor: '#db2777',
+                            inputValidator: (val) => !val ? 'Wajib isi durasi atau rencana kembali!' : null
+                        }).then((durRes) => {
+                            if(durRes.isConfirmed) submitAbsensi(statusType, durRes.value);
+                        });
+                    } else {
+                        // Tugas lain, tanyakan keterangan spesifik (tujuan / pasien)
+                        Swal.fire({
+                            title: `Detail Keterangan`,
+                            input: 'textarea',
+                            inputPlaceholder: `Tujuan / Ket. ${statusType} (Opsional)`,
+                            showCancelButton: true,
+                            confirmButtonColor: '#db2777'
+                        }).then((ketRes) => {
+                            if(ketRes.isConfirmed) submitAbsensi(statusType, ketRes.value);
+                        });
+                    }
+                }
+            });
+        }
+
         // ========== ABSENSI SUBMIT (PROSES KE SERVER) ==========
-        function submitAbsensi(statusType) {
-            // (Fungsi ini tetap tidak diubah secara inti, dipanggil setelah verifikasi)
-            if (statusType !== 'Hadir') {
+        function submitAbsensi(statusType, overrideNote = null) {
+            // Status izin biasa (Cuti, Sakit)
+            if (statusType === 'Izin' || statusType === 'Sakit') {
                 Swal.fire({
                     title: `Alasan ${statusType}`, input: 'textarea', showCancelButton: true, confirmButtonText: 'Kirim', confirmButtonColor: '#db2777'
                 }).then((res) => { if (res.isConfirmed && res.value) sendAbsenData(statusType, res.value); });
-            } else {
+            } 
+            // Status Tugas Luar, dll yang sudah membawa override note dari popup khusus
+            else if (overrideNote !== null) {
+                sendAbsenData(statusType, overrideNote);
+            } 
+            // Status Hadir
+            else {
                 sendAbsenData(statusType, "");
             }
         }
@@ -1063,35 +1006,46 @@
             const banner = document.getElementById('todayStatusBanner');
             const statusText = document.getElementById('todayStatusText');
             const details = document.getElementById('todayStatusDetails');
-            const btn = document.getElementById('btnAbsenMasuk');
+            
+            const btnAbsen = document.getElementById('btnAbsenMasuk');
+            const btnTugas = document.getElementById('btnTugasLuar');
             
             if (!todayStatus || todayStatus.status === "Belum Absen") {
                 banner.classList.add('hidden');
-                btn.disabled = false;
-                btn.className = "col-span-1 bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-xl shadow-lg shadow-green-200 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-24";
+                
+                // Aktifkan kembali tombol absen
+                btnAbsen.disabled = false;
+                btnAbsen.className = "col-span-1 bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-xl shadow-lg shadow-green-200 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-20";
+                
+                btnTugas.disabled = false;
+                btnTugas.className = "col-span-1 bg-white border border-purple-100 text-purple-600 p-3 rounded-xl shadow-sm hover:bg-purple-50 active:scale-95 transition flex flex-col items-center justify-center gap-1 h-20";
                 return;
             }
             
             banner.classList.remove('hidden');
-            btn.disabled = true;
-            btn.className = "col-span-1 bg-gray-300 text-gray-500 p-3 rounded-xl cursor-not-allowed flex flex-col items-center justify-center gap-1 h-24";
+            
+            // Matikan tombol absen
+            const disableClass = "col-span-1 bg-gray-200 text-gray-400 p-3 rounded-xl cursor-not-allowed flex flex-col items-center justify-center gap-1 h-20 border border-gray-100";
+            btnAbsen.disabled = true; btnAbsen.className = disableClass;
+            btnTugas.disabled = true; btnTugas.className = disableClass;
             
             const jamMasukFix = formatJamStandard(todayStatus.jam_masuk);
             const jamPulangFix = formatJamStandard(todayStatus.jam_pulang);
+            const statusType = todayStatus.status;
 
-            if (todayStatus.status === "Hadir") {
+            if (statusType === "Hadir" || statusType === "Dinas Luar" || statusType === "Homecare" || statusType === "Izin Sebentar") {
                 if (todayStatus.sudah_pulang) {
-                    statusText.textContent = "✓ Selesai Hari Ini";
+                    statusText.textContent = `✓ Selesai Hari Ini (${statusType})`;
                     details.innerHTML = `Masuk: ${jamMasukFix} | Pulang: ${jamPulangFix}`;
                     document.getElementById('todayActionButtons').innerHTML = '';
                 } else {
-                    statusText.textContent = "✓ Sedang Bekerja";
+                    statusText.textContent = `✓ Sedang Bekerja (${statusType})`;
                     details.innerHTML = `Masuk: ${jamMasukFix}`;
                     document.getElementById('todayActionButtons').innerHTML = `<button onclick="absenPulangToday()" class="text-[10px] bg-white text-orange-600 px-3 py-1 rounded-full font-bold shadow-sm">Absen Pulang</button>`;
                 }
             } else {
                 statusText.textContent = `✓ ${todayStatus.status}`;
-                details.innerHTML = "Tidak perlu absen";
+                details.innerHTML = "Tidak perlu absen pulang";
                 document.getElementById('todayActionButtons').innerHTML = '';
             }
         }
@@ -1149,8 +1103,7 @@
             .then(res => res.json()).then(resp => {
                 tbody.innerHTML = "";
                 if(!resp.data || resp.data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-300">Belum ada data</td></tr>`;
-                    return;
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-300">Belum ada data</td></tr>`; return;
                 }
                 
                 resp.data.forEach(row => {
@@ -1160,12 +1113,16 @@
                     const isHariIni = (tglStandar === formatTanggalStandard(new Date()));
                     
                     let btnPulang = '';
-                    if (row.status === 'Hadir' && (!jamPulang || jamPulang === '-')) {
+                    // Mengizinkan berbagai jenis kehadiran untuk diabsen pulang khusus
+                    const validPulangStatuses = ['Hadir', 'Dinas Luar', 'Homecare', 'Izin Sebentar'];
+                    
+                    if (validPulangStatuses.includes(row.status) && (!jamPulang || jamPulang === '-')) {
                         btnPulang = `<button onclick="triggerPulangSpecific('${row.absenID}')" class="bg-orange-500 text-white px-2 py-1.5 rounded text-[10px] font-bold shadow-sm w-full">Pulang</button>`;
                     }
 
                     const lateInfo = checkLateness(row.shift, jamMasuk, row.status);
                     let infoKeterlambatan = lateInfo.status === 'late' ? `<div class="text-[8px] ${lateInfo.color} font-bold mt-0.5">${lateInfo.text}</div>` : '';
+                    let statusLabel = row.status !== 'Hadir' ? `<div class="text-[8px] font-bold text-purple-500 mt-0.5 whitespace-normal break-words w-16 leading-tight">${row.status}</div>` : '';
 
                     tbody.innerHTML += `
                         <tr class="hover:bg-pink-50 border-b border-gray-100 transition-colors">
@@ -1174,7 +1131,7 @@
                                 <div class="text-[9px] text-gray-400">${row.hari}</div>
                             </td>
                             <td class="p-3"><span class="${getShiftBadgeClass(row.shift)} text-[10px] px-2 py-1 rounded shadow-sm">${getShiftShortName(row.shift)}</span></td>
-                            <td class="p-3 font-mono text-[10px] text-gray-600">${jamMasuk} ${infoKeterlambatan}</td>
+                            <td class="p-3 font-mono text-[10px] text-gray-600">${jamMasuk} ${infoKeterlambatan} ${statusLabel}</td>
                             <td class="p-3 font-mono text-[10px] text-gray-600">${jamPulang}</td>
                             <td class="p-3 text-center align-middle w-16">${btnPulang}</td>
                         </tr>
@@ -1226,17 +1183,11 @@
             div.innerHTML = html || '<p class="text-center text-xs text-gray-400">Gagal memuat jadwal</p>';
         }
 
-        // ========== JADWAL BULANAN & POP UP JADWAL HARI INI ==========
         function showScheduleInfo() {
             const todayStr = new Date().toISOString().split('T')[0];
             toggleLoading(true, "Memuat Pembagian Jadwal Hari Ini...");
-            
-            fetch(SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "GET_SCHEDULE_INFO", date: todayStr })
-            })
-            .then(res => res.json())
-            .then(data => {
+            fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "GET_SCHEDULE_INFO", date: todayStr }) })
+            .then(res => res.json()).then(data => {
                 toggleLoading(false);
                 if (data.result === 'success') {
                     let htmlPagi = data.schedule.pagi && data.schedule.pagi.length > 0 ? data.schedule.pagi.join(', ') : '-';
@@ -1249,42 +1200,21 @@
                                 <p class="font-bold text-lg text-pink-600">Info Jadwal Hari Ini</p>
                                 <p class="text-xs text-gray-500">${data.day_name}, ${formatTanggalStandard(data.date)}</p>
                             </div>
-                            
                             <div class="bg-gray-50 p-2 rounded mb-3 text-xs border border-gray-100">
                                 <p><i class="fas fa-flag text-red-400 w-4"></i> <strong>Status:</strong> ${data.is_holiday ? '<span class="text-red-500 font-bold">Libur Nasional</span>' : 'Hari Kerja Normal'}</p>
                                 <p class="mt-1"><i class="fas fa-sync text-blue-400 w-4"></i> <strong>Siklus Roster:</strong> Hari ke-${(data.roster_index + 1)} dari 35 Hari</p>
                             </div>
-                            
                             <p class="font-bold text-pink-600 pb-1 mb-2 mt-4 text-xs uppercase"><i class="fas fa-users"></i> Pembagian Shift Harian:</p>
                             <ul class="space-y-2 text-xs">
-                                <li class="bg-blue-50 p-2 rounded border border-blue-100 flex items-center">
-                                    <span class="badge-pagi px-2 py-0.5 rounded font-bold mr-2 text-[10px]">PAGI</span> 
-                                    <span class="font-semibold text-blue-800">${htmlPagi}</span>
-                                </li>
-                                <li class="bg-purple-50 p-2 rounded border border-purple-100 flex items-center">
-                                    <span class="badge-sore px-2 py-0.5 rounded font-bold mr-2 text-[10px]">SORE</span> 
-                                    <span class="font-semibold text-purple-800">${htmlSore}</span>
-                                </li>
-                                <li class="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
-                                    <span class="badge-libur px-2 py-0.5 rounded font-bold mr-2 text-[10px]">OFF</span> 
-                                    <span class="text-gray-600">${htmlLibur}</span>
-                                </li>
+                                <li class="bg-blue-50 p-2 rounded border border-blue-100 flex items-center"><span class="badge-pagi px-2 py-0.5 rounded font-bold mr-2 text-[10px]">PAGI</span> <span class="font-semibold text-blue-800">${htmlPagi}</span></li>
+                                <li class="bg-purple-50 p-2 rounded border border-purple-100 flex items-center"><span class="badge-sore px-2 py-0.5 rounded font-bold mr-2 text-[10px]">SORE</span> <span class="font-semibold text-purple-800">${htmlSore}</span></li>
+                                <li class="bg-gray-50 p-2 rounded border border-gray-200 flex items-center"><span class="badge-libur px-2 py-0.5 rounded font-bold mr-2 text-[10px]">OFF</span> <span class="text-gray-600">${htmlLibur}</span></li>
                             </ul>
                         </div>
                     `;
-                    
-                    Swal.fire({
-                        html: infoHtml,
-                        width: '90%',
-                        confirmButtonColor: '#db2777',
-                        confirmButtonText: 'Tutup'
-                    });
+                    Swal.fire({ html: infoHtml, width: '90%', confirmButtonColor: '#db2777', confirmButtonText: 'Tutup' });
                 }
-            })
-            .catch(error => {
-                toggleLoading(false);
-                Swal.fire('Error', 'Gagal memuat info jadwal.', 'error');
-            });
+            }).catch(() => { toggleLoading(false); Swal.fire('Error', 'Gagal memuat info jadwal.', 'error'); });
         }
 
         function loadMonthlySchedule() {
@@ -1294,12 +1224,10 @@
             .then(res => res.json()).then(data => {
                 toggleLoading(false);
                 if (data.result === 'success') {
-                    const tableBody = document.getElementById('scheduleTableBody');
-                    tableBody.innerHTML = '';
+                    const tableBody = document.getElementById('scheduleTableBody'); tableBody.innerHTML = '';
                     data.schedule.forEach(day => {
                         const isToday = new Date().getDate() === day.day && new Date().getMonth() + 1 === scheduleCurrentMonth && new Date().getFullYear() === scheduleCurrentYear;
                         const dateStyle = isToday ? 'text-pink-600 font-bold bg-pink-100 rounded-full w-6 h-6 flex items-center justify-center mx-auto shadow-inner' : 'text-gray-700 font-bold text-center block';
-                        
                         let coworkersHtml = day.coworkers && day.coworkers.length > 0 ? `<div class="text-[9px] text-gray-500 mt-1"><i class="fas fa-user-friends mr-1"></i>${day.coworkers.join(', ')}</div>` : (day.shift !== "Libur Nasional" && day.shift !== "Non-Shift" ? `<div class="text-[9px] text-gray-400 mt-1 italic">Kerja sendiri</div>` : '');
 
                         const tr = document.createElement('tr');
@@ -1356,14 +1284,12 @@
                     try {
                         const startD = new Date(startDate); startD.setHours(0,0,0,0);
                         const endD = new Date(endDate); endD.setHours(23,59,59,999);
-                        
                         let rowD;
                         if(row.tanggal.includes('-') && row.tanggal.match(/^\d{4}-\d{2}-\d{2}/)) {
                             const p = row.tanggal.split('T')[0].split('-'); rowD = new Date(p[0], p[1]-1, p[2]);
                         } else if(row.tanggal.includes('/')) {
                             const p = row.tanggal.split(' ')[0].split('/'); rowD = new Date(p[2], p[1]-1, p[0]);
                         } else { rowD = new Date(row.tanggal); }
-                        
                         matchDate = (rowD.getTime() >= startD.getTime() && rowD.getTime() <= endD.getTime());
                     } catch(e) { matchDate = true; }
                 }
@@ -1381,17 +1307,31 @@
             summary.textContent = `Menampilkan ${filteredData.length} baris data absensi`;
 
             if(filteredData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">Data tidak ditemukan.</td></tr>`; return;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">Data tidak ditemukan.</td></tr>`; return;
             }
 
             filteredData.forEach(row => {
                 const jamMsk = formatJamStandard(row.jam_masuk);
                 const jamPlg = formatJamStandard(row.jam_pulang);
                 const tgl = formatTanggalStandard(row.tanggal);
+                
+                // Menghitung telat HANYA saat status = Hadir.
                 const lateInfo = checkLateness(row.shift, jamMsk, row.status);
                 
                 let masukHtml = `<div class="font-mono text-gray-700">${jamMsk}</div>`;
                 if (lateInfo.status === 'late') masukHtml += `<div class="text-[8px] ${lateInfo.color} font-bold mt-0.5">${lateInfo.text}</div>`;
+
+                // Pembuatan Link Google Maps 
+                let lokasiDisplay = row.lokasi;
+                if(row.lokasi !== "No GPS" && row.lokasi !== "Sistem" && row.lokasi !== "-" && row.lokasi !== "") {
+                    lokasiDisplay = `<a href="https://maps.google.com/?q=${row.lokasi}" target="_blank" class="text-blue-500 hover:underline"><i class="fas fa-map-marker-alt"></i> Maps</a>`;
+                }
+
+                // Penggabungan Status dan Keterangan (Agar UI responsif namun informasi detail tetap terlihat)
+                let statusDanKetHtml = `<div class="font-semibold ${row.status==='Hadir'?'text-green-600':'text-gray-800'}">${row.status}</div>`;
+                if (row.keterangan && row.keterangan !== "" && row.keterangan !== "-") {
+                    statusDanKetHtml += `<div class="text-[8px] text-gray-500 italic max-w-[100px] truncate" title="${row.keterangan}">${row.keterangan}</div>`;
+                }
 
                 tbody.innerHTML += `
                     <tr class="border-b border-gray-50 hover:bg-pink-50 transition-colors">
@@ -1400,26 +1340,23 @@
                         <td class="p-2 text-[9px] text-center"><span class="${getShiftBadgeClass(row.shift)} px-1.5 py-0.5 rounded shadow-sm">${getShiftShortName(row.shift)}</span></td>
                         <td class="p-2 text-[9px]">${masukHtml}</td>
                         <td class="p-2 text-[9px] font-mono text-gray-600">${jamPlg}</td>
-                        <td class="p-2 pr-3 text-[9px] font-semibold ${row.status==='Hadir'?'text-green-600':'text-gray-600'}">${row.status}</td>
+                        <td class="p-2 text-[9px] text-center">${lokasiDisplay}</td>
+                        <td class="p-2 pr-3 text-[9px]">${statusDanKetHtml}</td>
                     </tr>
                 `;
             });
         }
 
-        // ========== CETAK LAPORAN ABSENSI (PDF/GAMBAR) ==========
+        // ========== CETAK LAPORAN (PDF/GAMBAR) ==========
         function showPrintOptions() {
             const filteredData = getFilteredAdminData();
             if (filteredData.length === 0) { Swal.fire('Data Kosong', 'Tidak ada data untuk rentang filter saat ini.', 'warning'); return; }
 
             preparePrintTemplate(filteredData);
             Swal.fire({
-                title: 'Cetak Laporan Absensi',
-                text: `Ditemukan ${filteredData.length} data. Pilih format:`, icon: 'info',
-                showCancelButton: true, showDenyButton: true,
-                confirmButtonColor: '#db2777', denyButtonColor: '#059669', cancelButtonColor: '#6b7280',
-                confirmButtonText: '<i class="fas fa-file-pdf mr-1"></i> Unduh PDF',
-                denyButtonText: '<i class="fas fa-image mr-1"></i> Unduh Gambar',
-                cancelButtonText: 'Batal'
+                title: 'Cetak Laporan Absensi', text: `Ditemukan ${filteredData.length} data. Pilih format:`, icon: 'info',
+                showCancelButton: true, showDenyButton: true, confirmButtonColor: '#db2777', denyButtonColor: '#059669', cancelButtonColor: '#6b7280',
+                confirmButtonText: '<i class="fas fa-file-pdf mr-1"></i> Unduh PDF', denyButtonText: '<i class="fas fa-image mr-1"></i> Unduh Gambar', cancelButtonText: 'Batal'
             }).then((res) => {
                 if (res.isConfirmed) processPrintPDF();
                 else if (res.isDenied) processPrintImage();
@@ -1434,10 +1371,11 @@
             document.getElementById('printReportSubtitle').innerText = `Periode: ${formatTanggalStandard(startStr)} s.d ${formatTanggalStandard(endStr)} | Pegawai: ${nameStr}`;
             
             let hadir = data.filter(d => d.status === 'Hadir').length;
-            let sakit = data.filter(d => d.status === 'Sakit').length;
-            let izin = data.filter(d => d.status === 'Izin').length;
-            let totalTelat = 0;
+            let sakitIzin = data.filter(d => d.status === 'Sakit' || d.status === 'Izin').length;
+            // Statistik khusus Tugas Luar / Homecare dll
+            let tugasLainnya = data.filter(d => d.status === 'Dinas Luar' || d.status === 'Homecare' || d.status === 'Izin Sebentar' || d.status === 'Lainnya').length;
             
+            let totalTelat = 0;
             const tbody = document.getElementById('printTableData');
             tbody.innerHTML = '';
             
@@ -1446,10 +1384,14 @@
                 const lateInfo = checkLateness(row.shift, jM, row.status);
                 if (lateInfo.status === 'late') totalTelat++;
                 
-                let ketHtml = '-';
-                if (row.status === 'Hadir') {
-                    ketHtml = lateInfo.status === 'late' ? `<span class="text-red-600 font-bold">${lateInfo.text}</span>` : `<span class="text-green-600">Tepat Waktu</span>`;
-                }
+                let textColor = '';
+                if (row.status === 'Hadir') textColor = 'text-green-600';
+                else if (row.status === 'Sakit' || row.status === 'Izin' || row.status === 'Alpa') textColor = 'text-red-600';
+                else textColor = 'text-blue-600';
+
+                // Pembuatan Link Lokasi Text-only jika koordinat valid
+                let lokText = row.lokasi;
+                if(row.lokasi && row.lokasi.includes(',')) lokText = "Terdeteksi GPS";
 
                 tbody.innerHTML += `
                     <tr class="border-b border-gray-200">
@@ -1457,18 +1399,19 @@
                         <td class="p-2 border border-gray-300">${formatTanggalStandard(row.tanggal)}</td>
                         <td class="p-2 border border-gray-300 font-bold">${row.nama}</td>
                         <td class="p-2 border border-gray-300 text-center">${row.shift}</td>
-                        <td class="p-2 border border-gray-300 text-center font-mono">${jM}</td>
+                        <td class="p-2 border border-gray-300 text-center font-mono">${jM} ${lateInfo.status==='late'?`<br><span class="text-[8px] text-red-500">${lateInfo.text}</span>`:''}</td>
                         <td class="p-2 border border-gray-300 text-center font-mono">${formatJamStandard(row.jam_pulang)}</td>
-                        <td class="p-2 border border-gray-300 text-center font-bold ${row.status==='Hadir'?'text-green-600':''}">${row.status}</td>
-                        <td class="p-2 border border-gray-300 text-center">${ketHtml}</td>
+                        <td class="p-2 border border-gray-300 text-center font-bold ${textColor}">${row.status}</td>
+                        <td class="p-2 border border-gray-300 text-center text-[8px] truncate max-w-[120px]" title="${row.keterangan || '-'}">${row.keterangan || '-'}</td>
+                        <td class="p-2 border border-gray-300 text-center text-[8px] text-gray-500">${lokText}</td>
                     </tr>
                 `;
             });
 
             document.getElementById('printStatTotal').innerText = data.length;
             document.getElementById('printStatHadir').innerText = hadir;
-            document.getElementById('printStatSakit').innerText = sakit;
-            document.getElementById('printStatIzin').innerText = izin;
+            document.getElementById('printStatSakit').innerText = sakitIzin;
+            document.getElementById('printStatTugasLuar').innerText = tugasLainnya;
             document.getElementById('printStatTelat').innerText = totalTelat;
 
             const now = new Date();
@@ -1482,7 +1425,7 @@
             const opt = {
                 margin: 0, filename: `Laporan_Absensi.pdf`,
                 image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' } // Menggunakan Landscape karena kolom bertambah
             };
             html2pdf().set(opt).from(el).save().then(() => { toggleLoading(false); Swal.fire('Berhasil!', 'PDF diunduh.', 'success'); });
         }
@@ -1490,8 +1433,7 @@
         function processPrintImage() {
             toggleLoading(true, "Membangun Gambar...");
             html2canvas(document.getElementById('printContainer'), { scale: 2, useCORS: true }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `Laporan_Absensi.png`;
+                const link = document.createElement('a'); link.download = `Laporan_Absensi.png`;
                 link.href = canvas.toDataURL("image/png"); link.click();
                 toggleLoading(false); Swal.fire('Berhasil!', 'Gambar diunduh.', 'success');
             });
@@ -1504,76 +1446,49 @@
             const filterName = document.getElementById('filterName').value;
             const nameStr = document.getElementById('filterName').options[document.getElementById('filterName').selectedIndex].text;
 
-            if (!startDate || !endDate) {
-                Swal.fire('Error', 'Pilih rentang tanggal terlebih dahulu', 'warning'); return;
-            }
-
-            let start = new Date(startDate);
-            let end = new Date(endDate);
+            if (!startDate || !endDate) { Swal.fire('Error', 'Pilih rentang tanggal terlebih dahulu', 'warning'); return; }
+            let start = new Date(startDate); let end = new Date(endDate);
             let diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
-            if (diffDays > 31) {
-                Swal.fire('Rentang Terlalu Panjang', 'Maksimal rentang cetak jadwal adalah 31 hari agar tidak membebani server', 'warning'); return;
-            }
+            if (diffDays > 31) { Swal.fire('Rentang Terlalu Panjang', 'Maksimal rentang cetak jadwal adalah 31 hari', 'warning'); return; }
 
             Swal.fire({
-                title: 'Cetak Jadwal Shift',
-                text: `Cetak jadwal untuk ${nameStr} (${diffDays} Hari). Pilih format:`,
-                icon: 'info',
-                showCancelButton: true,
-                showDenyButton: true,
-                confirmButtonColor: '#db2777', denyButtonColor: '#059669', cancelButtonColor: '#6b7280',
-                confirmButtonText: '<i class="fas fa-file-pdf mr-1"></i> PDF',
-                denyButtonText: '<i class="fas fa-image mr-1"></i> Gambar',
-                cancelButtonText: 'Batal'
+                title: 'Cetak Jadwal Shift', text: `Cetak jadwal untuk ${nameStr} (${diffDays} Hari). Pilih format:`, icon: 'info',
+                showCancelButton: true, showDenyButton: true, confirmButtonColor: '#db2777', denyButtonColor: '#059669', cancelButtonColor: '#6b7280',
+                confirmButtonText: '<i class="fas fa-file-pdf mr-1"></i> PDF', denyButtonText: '<i class="fas fa-image mr-1"></i> Gambar', cancelButtonText: 'Batal'
             }).then(async (res) => {
                 if (res.isConfirmed || res.isDenied) {
                     await prepareSchedulePrintTemplate(start, diffDays, filterName, nameStr);
-                    if (res.isConfirmed) processPrintSchedulePDF();
-                    else processPrintScheduleImage();
+                    if (res.isConfirmed) processPrintSchedulePDF(); else processPrintScheduleImage();
                 }
             });
         }
 
         async function prepareSchedulePrintTemplate(start, diffDays, filterName, nameStr) {
             toggleLoading(true, "Menarik Data Jadwal (Ini butuh beberapa saat)...");
-            const tbody = document.getElementById('printScheduleTableData');
-            tbody.innerHTML = '';
+            const tbody = document.getElementById('printScheduleTableData'); tbody.innerHTML = '';
             
-            // Atur subjudul format
-            let endDisplayDate = new Date(start);
-            endDisplayDate.setDate(endDisplayDate.getDate() + (diffDays - 1));
+            let endDisplayDate = new Date(start); endDisplayDate.setDate(endDisplayDate.getDate() + (diffDays - 1));
             document.getElementById('printScheduleSubtitle').innerText = `Periode: ${formatTanggalStandard(start.toISOString().split('T')[0])} s.d ${formatTanggalStandard(endDisplayDate.toISOString().split('T')[0])} | Pegawai: ${nameStr}`;
 
             const datesToFetch = [];
             for (let i = 0; i < diffDays; i++) {
-                let currentDate = new Date(start);
-                currentDate.setDate(currentDate.getDate() + i);
-                const yyyy = currentDate.getFullYear();
-                const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
-                const dd = String(currentDate.getDate()).padStart(2, '0');
+                let currentDate = new Date(start); currentDate.setDate(currentDate.getDate() + i);
+                const yyyy = currentDate.getFullYear(); const mm = String(currentDate.getMonth() + 1).padStart(2, '0'); const dd = String(currentDate.getDate()).padStart(2, '0');
                 datesToFetch.push(`${yyyy}-${mm}-${dd}`);
             }
 
-            // Proses fetch paralel dengan batasan (chunk)
-            let allData = [];
-            const chunkSize = 7; 
-            
+            let allData = []; const chunkSize = 7; 
             for (let i = 0; i < datesToFetch.length; i += chunkSize) {
                 const chunk = datesToFetch.slice(i, i + chunkSize);
                 const promises = chunk.map(dateStr => {
                     let reqBody = { action: "GET_SCHEDULE_INFO", date: dateStr };
                     if (filterName !== 'All') reqBody.nama = filterName;
-                    return fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(reqBody) })
-                           .then(r => r.json())
-                           .catch(e => null);
+                    return fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(reqBody) }).then(r => r.json()).catch(e => null);
                 });
-                
-                const results = await Promise.all(promises);
-                allData = allData.concat(results);
+                const results = await Promise.all(promises); allData = allData.concat(results);
             }
 
-            // Bangun Tabel
             allData.forEach((data, index) => {
                 if (data && data.result === 'success') {
                     if (filterName === 'All') {
@@ -1594,8 +1509,7 @@
                             </tr>
                         `;
                     } else {
-                        let shift = data.user_shift;
-                        let rules = data.shift_rules ? data.shift_rules.label : '-';
+                        let shift = data.user_shift; let rules = data.shift_rules ? data.shift_rules.label : '-';
                         let statusKet = data.is_holiday ? '<span class="text-red-500 font-bold">Libur Nasional</span>' : 'Kerja Normal';
                         
                         tbody.innerHTML += `
@@ -1612,41 +1526,27 @@
                 }
             });
 
-            // Set Tanggal Tanda Tangan
             const now = new Date();
             document.getElementById('printScheduleTanggalTtd').innerText = `Padangsidimpuan, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
             document.getElementById('printScheduleTimestamp').innerText = `${now.getDate()} ${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()} Pukul ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} WIB`;
             
-            // Switch header tabel sesuai mode filter
-            const headAll = document.getElementById('theadScheduleAll');
-            const headIndividual = document.getElementById('theadScheduleIndividual');
-            if (filterName === 'All') {
-                headAll.style.display = 'table-row';
-                headIndividual.style.display = 'none';
-            } else {
-                headAll.style.display = 'none';
-                headIndividual.style.display = 'table-row';
-            }
+            const headAll = document.getElementById('theadScheduleAll'); const headIndividual = document.getElementById('theadScheduleIndividual');
+            if (filterName === 'All') { headAll.style.display = 'table-row'; headIndividual.style.display = 'none'; } 
+            else { headAll.style.display = 'none'; headIndividual.style.display = 'table-row'; }
             toggleLoading(false);
         }
 
         function processPrintSchedulePDF() {
             toggleLoading(true, "Membangun PDF Jadwal...");
             const el = document.getElementById('printScheduleContainer');
-            const opt = {
-                margin: 0, filename: `Jadwal_Shift.pdf`,
-                image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-            };
+            const opt = { margin: 0, filename: `Jadwal_Shift.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } };
             html2pdf().set(opt).from(el).save().then(() => { toggleLoading(false); Swal.fire('Berhasil!', 'PDF Jadwal diunduh.', 'success'); });
         }
 
         function processPrintScheduleImage() {
             toggleLoading(true, "Membangun Gambar Jadwal...");
             html2canvas(document.getElementById('printScheduleContainer'), { scale: 2, useCORS: true }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `Jadwal_Shift.png`;
-                link.href = canvas.toDataURL("image/png"); link.click();
+                const link = document.createElement('a'); link.download = `Jadwal_Shift.png`; link.href = canvas.toDataURL("image/png"); link.click();
                 toggleLoading(false); Swal.fire('Berhasil!', 'Gambar Jadwal diunduh.', 'success');
             });
         }
@@ -1659,22 +1559,18 @@
         }
         function getShiftShortName(s) { return s ? s.substring(0,2).toUpperCase() : '-'; }
         function toggleLoading(show, msg="Loading...") {
-            const el = document.getElementById('loadingOverlay');
-            document.getElementById('loadingText').innerText = msg;
+            const el = document.getElementById('loadingOverlay'); document.getElementById('loadingText').innerText = msg;
             show ? el.classList.remove('hidden') : el.classList.add('hidden');
         }
         
         function showScheduleView() {
             document.getElementById('userDashboard').classList.add('hidden');
-            document.getElementById('scheduleView').classList.remove('hidden');
-            document.getElementById('scheduleView').classList.add('flex');
-            document.getElementById('scheduleUserInfo').textContent = currentUser;
-            loadMonthlySchedule();
+            document.getElementById('scheduleView').classList.remove('hidden'); document.getElementById('scheduleView').classList.add('flex');
+            document.getElementById('scheduleUserInfo').textContent = currentUser; loadMonthlySchedule();
         }
         function hideScheduleView() {
             document.getElementById('scheduleView').classList.add('hidden');
-            document.getElementById('userDashboard').classList.remove('hidden');
-            document.getElementById('userDashboard').classList.add('flex');
+            document.getElementById('userDashboard').classList.remove('hidden'); document.getElementById('userDashboard').classList.add('flex');
         }
         function requestLocation() { forceRequestLocation(); }
     </script>
